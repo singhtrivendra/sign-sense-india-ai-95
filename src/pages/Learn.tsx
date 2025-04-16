@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SignItem, useSignAPI } from "@/services/api";
 import SignCard from "@/components/learn/SignCard";
 import AlphabetFilter from "@/components/learn/AlphabetFilter";
@@ -17,26 +17,28 @@ export default function Learn() {
   const { fetchSigns } = useSignAPI();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const loadSigns = async () => {
-      setLoading(true);
-      try {
-        const data = await fetchSigns(selectedLetter);
-        setSigns(data);
-      } catch (error) {
-        console.error("Error loading signs:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load sign data. Please try again later.",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadSigns();
+  // Memoize the fetchSigns function to avoid unnecessary re-renders
+  const loadSigns = useCallback(async () => {
+    setLoading(true);
+    try {
+      console.log("Fetching signs for letter:", selectedLetter);
+      const data = await fetchSigns(selectedLetter);
+      setSigns(data);
+    } catch (error) {
+      console.error("Error loading signs:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load sign data. Please try again later.",
+      });
+    } finally {
+      setLoading(false);
+    }
   }, [selectedLetter, fetchSigns, toast]);
+
+  useEffect(() => {
+    loadSigns();
+  }, [loadSigns]);
 
   const handleLetterSelect = (letter: string) => {
     setSelectedLetter(letter);
@@ -52,14 +54,19 @@ export default function Learn() {
     setSelectedCategory(category);
   };
 
-  const filteredSigns = signs.filter((sign) => {
-    const matchesSearch = searchTerm
-      ? sign.title.toLowerCase().includes(searchTerm.toLowerCase())
-      : true;
-    const matchesCategory =
-      selectedCategory === "All Categories" || sign.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Move filtering logic out of render for better performance
+  const filteredSigns = useCallback(() => {
+    return signs.filter((sign) => {
+      const matchesSearch = searchTerm
+        ? sign.title.toLowerCase().includes(searchTerm.toLowerCase())
+        : true;
+      const matchesCategory =
+        selectedCategory === "All Categories" || sign.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [signs, searchTerm, selectedCategory]);
+
+  const displaySigns = filteredSigns();
 
   return (
     <div className="container py-12">
@@ -101,9 +108,9 @@ export default function Learn() {
             ></div>
           ))}
         </div>
-      ) : filteredSigns.length > 0 ? (
+      ) : displaySigns.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredSigns.map((sign) => (
+          {displaySigns.map((sign) => (
             <SignCard key={sign.id} sign={sign} />
           ))}
         </div>

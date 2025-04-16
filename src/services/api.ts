@@ -1,3 +1,4 @@
+
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
@@ -14,7 +15,19 @@ export type SignItem = {
   letter: string;
 };
 
+// Cache to store previously fetched sign data
+const signCache: Record<string, SignItem[]> = {};
+
 export async function fetchSignsForLetter(letter: string): Promise<SignItem[]> {
+  // Return cached data if available
+  if (signCache[letter]) {
+    console.log(`Using cached data for letter ${letter}`);
+    return signCache[letter];
+  }
+
+  console.log(`Fetching new data for letter ${letter}`);
+  
+  // This is mock data for demonstration
   const signData = {
     'A': [
       { id: 'a1', title: 'Abbreviation', imageUrl: '/signs/abbreviation.jpg', category: 'Common', description: 'Sign for shortening a word or phrase', letter: 'A' },
@@ -30,7 +43,12 @@ export async function fetchSignsForLetter(letter: string): Promise<SignItem[]> {
     // ... other letters
   };
 
-  return signData[letter] || [];
+  const result = signData[letter] || [];
+  
+  // Store in cache for future use
+  signCache[letter] = result;
+  
+  return result;
 }
 
 function parseSignsFromHTML(html: string, letter: string): SignItem[] {
@@ -40,10 +58,12 @@ function parseSignsFromHTML(html: string, letter: string): SignItem[] {
 }
 
 function getMockSignsForLetter(letter: string): SignItem[] {
+  // Limit number of mock signs to improve performance
+  const maxCount = 12;
   const categories = ['Common', 'Greeting', 'Question', 'Action', 'Object', 'Emotion'];
   
-  // Generate between 5-15 mock signs for the given letter
-  const count = Math.floor(Math.random() * 10) + 5;
+  // Generate between 5-maxCount mock signs for the given letter
+  const count = Math.floor(Math.random() * (maxCount - 5)) + 5;
   
   return Array.from({ length: count }, (_, i) => {
     const id = `${letter.toLowerCase()}-${i + 1}`;
@@ -100,6 +120,7 @@ export function useSignAPI() {
     try {
       return await fetchSignsForLetter(letter);
     } catch (error) {
+      console.error("Error in useSignAPI:", error);
       toast({
         title: "Error fetching signs",
         description: "There was a problem retrieving sign language data.",
