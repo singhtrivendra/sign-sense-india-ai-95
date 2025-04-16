@@ -17,6 +17,7 @@ export default function WebcamPlaceholder() {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
   const [cameraAttempts, setCameraAttempts] = useState(0);
+  const [attemptingPlay, setAttemptingPlay] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -24,10 +25,10 @@ export default function WebcamPlaceholder() {
   
   const { toast } = useToast();
 
-  // Clean up function to handle component unmount
+  // Check for camera access on component mount
   useEffect(() => {
-    // Check for camera access on component mount
     debugCameraAccess().then(result => {
+      console.log("Camera debug result:", result);
       if (result.devices) {
         setAvailableCameras(result.devices);
       }
@@ -87,65 +88,93 @@ export default function WebcamPlaceholder() {
         streamRef.current = null;
       }
       
-      // Request camera access with explicit constraints for better compatibility
-      // Try with different constraints if we've had failures before
-      const constraints = {
-        audio: false,
-        video: cameraAttempts > 1 ? true : {
-          facingMode: 'user',
-          width: { ideal: 640 },
-          height: { ideal: 480 }
-        }
-      };
+      // Different constraints for different attempts
+      let constraints;
+      if (cameraAttempts > 2) {
+        // Very basic constraints as last resort
+        constraints = { video: true, audio: false };
+        console.log("Using basic video constraints");
+      } else if (cameraAttempts > 1) {
+        // Try with different constraints on second attempt
+        constraints = {
+          audio: false,
+          video: {
+            facingMode: 'user',
+            width: { ideal: 320 }, // Smaller resolution
+            height: { ideal: 240 }
+          }
+        };
+        console.log("Using lower resolution constraints");
+      } else {
+        // First attempt with standard constraints
+        constraints = {
+          audio: false,
+          video: {
+            facingMode: 'user',
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          }
+        };
+        console.log("Using standard constraints");
+      }
       
       console.log("Requesting camera with constraints:", constraints);
       
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = stream;
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        console.log("Camera stream obtained successfully:", stream);
+        streamRef.current = stream;
         
-        // Make sure video autoplay works properly
-        videoRef.current.autoplay = true;
-        videoRef.current.muted = true;
-        videoRef.current.playsInline = true;
-        
-        // Add event listeners to handle video loading
-        videoRef.current.onloadedmetadata = () => {
-          if (videoRef.current) {
-            videoRef.current.play()
-              .then(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          
+          // Make sure video autoplay works properly
+          videoRef.current.autoplay = true;
+          videoRef.current.muted = true;
+          videoRef.current.playsInline = true;
+          
+          videoRef.current.onloadedmetadata = async () => {
+            console.log("Video metadata loaded");
+            if (videoRef.current) {
+              try {
+                setAttemptingPlay(true);
+                await videoRef.current.play();
+                setAttemptingPlay(false);
                 console.log("Camera video stream started successfully");
                 setStatus("ready");
                 toast({
                   title: "Camera access granted",
                   description: "The webcam is now ready to use for sign detection.",
                 });
-              })
-              .catch(playError => {
+              } catch (playError) {
+                setAttemptingPlay(false);
                 console.error("Error playing video:", playError);
-                setCameraError(`Error playing video: ${playError.message}`);
+                setCameraError(`Error playing video: ${playError instanceof Error ? playError.message : 'Unknown error'}`);
                 toast({
                   title: "Camera needs manual activation",
                   description: "Please click the video area if camera doesn't start automatically.",
                   variant: "destructive"
                 });
-              });
-          }
-        };
-        
-        videoRef.current.onerror = (event) => {
-          const error = event as ErrorEvent;
-          console.error("Video element error occurred", error);
-          setCameraError(`Video error: ${error.message || 'Unknown error'}`);
-          setStatus("error");
-          toast({
-            variant: "destructive",
-            title: "Camera error",
-            description: "There was a problem accessing your camera.",
-          });
-        };
+              }
+            }
+          };
+          
+          videoRef.current.onerror = (event) => {
+            console.error("Video element error occurred", event);
+            setCameraError(`Video error: ${event instanceof Event ? 'Unknown error' : event}`);
+            setStatus("error");
+            toast({
+              variant: "destructive",
+              title: "Camera error",
+              description: "There was a problem accessing your camera.",
+            });
+          };
+        } else {
+          throw new Error("Video reference is not available");
+        }
+      } catch (streamError) {
+        console.error("Error getting camera stream:", streamError);
+        throw streamError; // Re-throw to be caught by outer try/catch
       }
       
       // Start loading the model regardless - even if video fails at first
@@ -167,6 +196,8 @@ export default function WebcamPlaceholder() {
         errorDescription = "No camera was found on your device. Please ensure a camera is connected.";
       } else if (errorStr.includes("in use") || errorStr.includes("inuse")) {
         errorDescription = "Your camera is being used by another application. Please close other apps that might be using the camera.";
+      } else if (errorStr.includes("constraint") || errorStr.includes("failed")) {
+        errorDescription = "Your camera doesn't support the requested resolution. Please try again with different settings.";
       }
       
       toast({
@@ -272,8 +303,23 @@ export default function WebcamPlaceholder() {
           {status === "loading" && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-blue-light/10">
               <div className="h-12 w-12 rounded-full border-4 border-t-blue border-blue/20 animate-spin"></div>
-              <p className="mt-4 text-muted-foreground">Requesting camera access...</p>
-              <p className="mt-2 text-xs text-muted-foreground">If this takes too long, check your browser permissions</p>
+              <p className="mt-4 text-muted-foreground">
+                {attemptingPlay ? "Starting camera stream..." : "Requesting camera access..."}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {cameraAttempts > 1 ? 
+                  "Trying with different camera settings..." :
+                  "If this takes too long, check your browser permissions"
+                }
+              </p>
+              <Button 
+                onClick={() => setShowTroubleshooting(true)} 
+                variant="outline" 
+                size="sm" 
+                className="mt-6"
+              >
+                Camera Troubleshooting
+              </Button>
             </div>
           )}
           
@@ -307,10 +353,11 @@ export default function WebcamPlaceholder() {
                 muted
                 playsInline
                 autoPlay
-                style={{ transform: "scaleX(-1)" }} /* Mirror the camera for more intuitive interaction */
+                style={{ transform: "scaleX(-1)" }}
                 onClick={() => {
                   // Attempt to play the video on user interaction if autoplay failed
                   if (videoRef.current) {
+                    console.log("Manual play attempt after click");
                     videoRef.current.play().catch(e => 
                       console.log("Play attempt on click failed:", e)
                     );
@@ -319,84 +366,18 @@ export default function WebcamPlaceholder() {
               ></video>
               
               {/* Enhanced hand tracking visualization */}
-              {status === "active" && !isPaused && (
-                <div className="absolute inset-0 z-20 pointer-events-none">
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                    <div className="relative">
-                      {/* Main detection area */}
-                      <div className="h-48 w-48 border-2 border-dashed border-blue rounded-full animate-pulse opacity-60"></div>
-                      
-                      {/* Hand tracking points visualization */}
-                      <div className="absolute top-0 left-0 w-full h-full">
-                        {/* Simulate finger tracking points */}
-                        {[...Array(5)].map((_, i) => (
-                          <div 
-                            key={i}
-                            className="absolute h-3 w-3 bg-green-500 rounded-full shadow-lg"
-                            style={{
-                              top: `${20 + Math.sin(Date.now() / 1000 + i) * 15}%`,
-                              left: `${25 + i * 12 + Math.cos(Date.now() / 1200 + i) * 5}%`,
-                              animation: `pulse 1.5s ease-in-out ${i * 0.2}s infinite alternate`
-                            }}
-                          />
-                        ))}
-                        
-                        {/* Palm center point */}
-                        <div 
-                          className="absolute h-5 w-5 bg-blue rounded-full shadow-lg"
-                          style={{
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            animation: 'pulse 2s infinite'
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Processing indicator */}
-                  <div className="absolute bottom-8 right-8 flex items-center bg-black/50 text-white p-2 rounded-lg text-sm">
-                    <div className="h-3 w-3 rounded-full bg-green-500 mr-2 animate-pulse"></div>
-                    <span>Processing gestures...</span>
-                  </div>
-                </div>
-              )}
+              {// ... keep existing code (hand tracking visualization) }
             </>
           )}
           
           {/* Detected sign overlay - Enhanced with animation */}
-          {detectedSign && status === "active" && (
-            <div className="absolute bottom-4 left-4 right-4 z-30 bg-black/70 backdrop-blur-sm rounded-lg p-3 text-white"
-                 style={{animation: "fadeIn 0.3s ease-out"}}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Hand className="h-5 w-5 mr-2 text-primary" />
-                  <span>Detected Sign:</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-bold text-primary text-lg">{detectedSign}</span>
-                  <div className="ml-2 h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-                </div>
-              </div>
-            </div>
-          )}
+          {// ... keep existing code (detected sign overlay) }
           
           {/* No sign detected status - only show after initial detection */}
-          {!detectedSign && status === "active" && !isPaused && (
-            <div className="absolute top-4 right-4 z-30 bg-black/50 backdrop-blur-sm rounded-lg p-2 text-white text-sm flex items-center">
-              <div className="h-2 w-2 bg-yellow-500 rounded-full animate-pulse mr-2"></div>
-              <span>Waiting for hand gesture...</span>
-            </div>
-          )}
+          {// ... keep existing code (no sign detected status) }
           
           {/* Model loading indicator */}
-          {isModelLoading && (
-            <div className="absolute top-4 right-4 z-30 bg-black/70 backdrop-blur-sm rounded-lg p-3 text-white flex items-center">
-              <div className="h-4 w-4 rounded-full border-2 border-t-blue border-blue/20 animate-spin mr-2"></div>
-              <span className="text-sm">Loading AI model...</span>
-            </div>
-          )}
+          {// ... keep existing code (model loading indicator) }
         </div>
         
         {/* Controls */}
@@ -509,7 +490,18 @@ export default function WebcamPlaceholder() {
                 <li>Close other applications that might be using your camera</li>
                 <li>If using a mobile device, check your device settings for camera permissions</li>
                 <li>Try using a different browser (Chrome or Firefox recommended)</li>
+                <li><strong>NEW:</strong> Try restarting your browser completely</li>
+                <li><strong>NEW:</strong> If on mobile, try switching between front and back cameras</li>
               </ol>
+            </div>
+            
+            <div className="mt-4 space-y-2">
+              <h4 className="font-medium">Additional Tips:</h4>
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>Make sure your camera is properly connected and working with other apps</li>
+                <li>Check if you have antivirus/security software blocking camera access</li>
+                <li>Some browsers require HTTPS for camera access</li>
+              </ul>
             </div>
             
             {cameraError && (
@@ -522,13 +514,22 @@ export default function WebcamPlaceholder() {
               </Alert>
             )}
             
-            <div className="mt-4">
+            <div className="mt-6 flex flex-col gap-2">
               <Button onClick={() => { 
                 setShowTroubleshooting(false);
                 setTimeout(() => handleStart(), 500);
               }}
               className="w-full">
-                Try Again
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Try With Different Settings
+              </Button>
+              
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline"
+                className="w-full"
+              >
+                Refresh Page
               </Button>
             </div>
           </div>

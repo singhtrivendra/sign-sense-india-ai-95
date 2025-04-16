@@ -94,35 +94,67 @@ export const captureVideoFrame = (videoElement: HTMLVideoElement): string => {
   return '';
 };
 
-// New function for debugging camera access issues
-export const debugCameraAccess = async (): Promise<{success: boolean, devices?: MediaDeviceInfo[], error?: string}> => {
+// Enhanced function for debugging camera access issues
+export const debugCameraAccess = async (): Promise<{success: boolean, devices?: MediaDeviceInfo[], error?: string, browserInfo?: string, secure?: boolean}> => {
   try {
+    // Check if we're in a secure context
+    const isSecureContext = window.isSecureContext;
+    console.log(`Secure context: ${isSecureContext}`);
+    
+    // Get browser information
+    const userAgent = navigator.userAgent;
+    const browserInfo = {
+      userAgent,
+      vendor: navigator.vendor,
+      platform: navigator.platform,
+      language: navigator.language
+    };
+    console.log("Browser info:", browserInfo);
+    
     // List available media devices to check camera availability
+    console.log("Enumerating media devices...");
     const devices = await navigator.mediaDevices.enumerateDevices();
     const videoDevices = devices.filter(device => device.kind === 'videoinput');
     
     console.log(`Found ${videoDevices.length} video input devices:`);
     videoDevices.forEach((device, index) => {
-      console.log(`Camera ${index + 1}: ${device.label || 'Unnamed camera'}`);
+      console.log(`Camera ${index + 1}: ${device.label || 'Unnamed camera'} (${device.deviceId.substring(0,8)}...)`);
     });
+    
+    // Attempt to get permissions state if supported by browser
+    let permissionStatus = null;
+    try {
+      if (navigator.permissions && navigator.permissions.query) {
+        permissionStatus = await navigator.permissions.query({ name: 'camera' as PermissionName });
+        console.log(`Camera permission status: ${permissionStatus.state}`);
+      }
+    } catch (permError) {
+      console.log("Permission query not supported:", permError);
+    }
     
     if (videoDevices.length === 0) {
       return {
         success: false,
         devices: [],
-        error: "No video input devices found"
+        error: "No video input devices found",
+        browserInfo: userAgent,
+        secure: isSecureContext
       };
     }
     
     return {
       success: true,
-      devices: videoDevices
+      devices: videoDevices,
+      browserInfo: userAgent,
+      secure: isSecureContext
     };
   } catch (error) {
     console.error("Error checking camera access:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error checking camera devices"
+      error: error instanceof Error ? error.message : "Unknown error checking camera devices",
+      browserInfo: navigator.userAgent,
+      secure: window.isSecureContext
     };
   }
 };
