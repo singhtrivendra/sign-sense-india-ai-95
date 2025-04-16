@@ -1,3 +1,4 @@
+
 import { pipeline, env } from '@huggingface/transformers';
 
 // Configure transformers.js to use the right settings
@@ -91,4 +92,37 @@ export const captureVideoFrame = (videoElement: HTMLVideoElement): string => {
   }
   
   return '';
+};
+
+// New function for debugging camera access issues
+export const debugCameraAccess = async (): Promise<{success: boolean, devices?: MediaDeviceInfo[], error?: string}> => {
+  try {
+    // List available media devices to check camera availability
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+    
+    console.log(`Found ${videoDevices.length} video input devices:`);
+    videoDevices.forEach((device, index) => {
+      console.log(`Camera ${index + 1}: ${device.label || 'Unnamed camera'}`);
+    });
+    
+    if (videoDevices.length === 0) {
+      return {
+        success: false,
+        devices: [],
+        error: "No video input devices found"
+      };
+    }
+    
+    return {
+      success: true,
+      devices: videoDevices
+    };
+  } catch (error) {
+    console.error("Error checking camera access:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error checking camera devices"
+    };
+  }
 };

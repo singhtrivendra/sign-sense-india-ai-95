@@ -1,10 +1,11 @@
+
 import React, { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Camera, Hand, Play, Video, Pause } from "lucide-react";
+import { AlertCircle, Camera, Hand, Play, Video, Pause, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
-import { initializeHandGestureModel, recognizeHandGesture, captureVideoFrame } from "@/utils/handGestureRecognition";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { initializeHandGestureModel, recognizeHandGesture, captureVideoFrame, debugCameraAccess } from "@/utils/handGestureRecognition";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function WebcamPlaceholder() {
   const [status, setStatus] = useState<"initial" | "loading" | "ready" | "active" | "error">("initial");
@@ -13,6 +14,9 @@ export default function WebcamPlaceholder() {
   const [isModelReady, setIsModelReady] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
+  const [cameraAttempts, setCameraAttempts] = useState(0);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -22,6 +26,13 @@ export default function WebcamPlaceholder() {
 
   // Clean up function to handle component unmount
   useEffect(() => {
+    // Check for camera access on component mount
+    debugCameraAccess().then(result => {
+      if (result.devices) {
+        setAvailableCameras(result.devices);
+      }
+    });
+    
     return () => {
       // Stop media stream when component unmounts
       if (streamRef.current) {
@@ -66,22 +77,28 @@ export default function WebcamPlaceholder() {
 
   const handleStart = async () => {
     setStatus("loading");
+    setCameraError(null);
+    setCameraAttempts(prev => prev + 1);
     
     try {
+      // Force refresh any existing streams
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      
       // Request camera access with explicit constraints for better compatibility
+      // Try with different constraints if we've had failures before
       const constraints = {
         audio: false,
-        video: {
+        video: cameraAttempts > 1 ? true : {
           facingMode: 'user',
           width: { ideal: 640 },
           height: { ideal: 480 }
         }
       };
       
-      // Force refresh any existing streams
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
+      console.log("Requesting camera with constraints:", constraints);
       
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
@@ -108,16 +125,20 @@ export default function WebcamPlaceholder() {
               })
               .catch(playError => {
                 console.error("Error playing video:", playError);
+                setCameraError(`Error playing video: ${playError.message}`);
                 toast({
                   title: "Camera needs manual activation",
                   description: "Please click the video area if camera doesn't start automatically.",
+                  variant: "destructive"
                 });
               });
           }
         };
         
-        videoRef.current.onerror = () => {
-          console.error("Video element error occurred");
+        videoRef.current.onerror = (event) => {
+          const error = event as ErrorEvent;
+          console.error("Video element error occurred", error);
+          setCameraError(`Video error: ${error.message || 'Unknown error'}`);
           setStatus("error");
           toast({
             variant: "destructive",
@@ -132,11 +153,26 @@ export default function WebcamPlaceholder() {
       
     } catch (error) {
       console.error('Error accessing camera:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown camera error';
+      setCameraError(errorMessage);
       setStatus("error");
+      
+      // Check for specific error patterns
+      const errorStr = String(error).toLowerCase();
+      let errorDescription = "Please allow camera access to use the sign language detection feature.";
+      
+      if (errorStr.includes("denied") || errorStr.includes("permission")) {
+        errorDescription = "Camera permission was denied. Please allow camera access in your browser settings.";
+      } else if (errorStr.includes("not found") || errorStr.includes("notfound")) {
+        errorDescription = "No camera was found on your device. Please ensure a camera is connected.";
+      } else if (errorStr.includes("in use") || errorStr.includes("inuse")) {
+        errorDescription = "Your camera is being used by another application. Please close other apps that might be using the camera.";
+      }
+      
       toast({
         variant: "destructive",
-        title: "Camera access denied",
-        description: "Please allow camera access to use the sign language detection feature.",
+        title: "Camera access problem",
+        description: errorDescription,
       });
     }
   };
@@ -179,7 +215,7 @@ export default function WebcamPlaceholder() {
               
               // Play a subtle sound effect for detection feedback
               const audio = new Audio();
-              audio.src = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YWoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBhxQo%2BTxtng0DwhLiuD43JdaKw8QWaf48Linux0NEcX2x4uShKRhWc6Hf4rp8RiAdU6fo98qtZCoYQp%2Fx%2BeS0gkAQMID27%2BO2gk0hK3n58%2BO2j1MoL3f89%2BO8klAoKHP%2B%2FfLLolctHGn%2F%2FvTarGYxGV3%2F%2F%2FLmsngxFVT%2F%2F%2FnntHomD07%2F%2F%2F7vuHUkC0P%2B%2F%2F%2F5wX4jBjr8%2Fv%2F%2B%2BcaGIgRB%2FP%2F%2F%2F%2B%2FJEAE6%2BP%2F%2F%2F%2F";
+              audio.src = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YWoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBhxQo%2BTxtng0DwhLiuD43JdaKw8QWaf48Linux0NEcX2x4uShKRhWc6Hf4rp8RiAdU6fo98qtZCoYQp%2Fx%2BeS0gkAQMID27%2BO2gk0hK3n58%2BO2j1MoL3f89%2BO8klAoKHP%2B%2FfLLolctHGn%2F%2FvTarGYxGV3%2F%2F%2FLmsngxFVT%2F%2F%2FnntHomD07%2F%2F%2F7vuHUkC0P%2B%2F%2F%2F5wX4jBjr8%2Fv%2F%2B%2BcaGIgRB%2FP%2F%2F%2F%2F%2FJEAE6%2BP%2F%2F%2F%2F";
               audio.volume = 0.2;
               audio.play().catch(err => console.log("Audio feedback not supported"));
             }
@@ -237,6 +273,7 @@ export default function WebcamPlaceholder() {
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-blue-light/10">
               <div className="h-12 w-12 rounded-full border-4 border-t-blue border-blue/20 animate-spin"></div>
               <p className="mt-4 text-muted-foreground">Requesting camera access...</p>
+              <p className="mt-2 text-xs text-muted-foreground">If this takes too long, check your browser permissions</p>
             </div>
           )}
           
@@ -244,13 +281,14 @@ export default function WebcamPlaceholder() {
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/5 p-8">
               <Alert variant="destructive" className="max-w-md">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Camera access denied</AlertTitle>
+                <AlertTitle>Camera access issue</AlertTitle>
                 <AlertDescription>
-                  Please allow camera access in your browser settings to use the sign language detection feature.
+                  {cameraError || "Please allow camera access in your browser settings to use the sign language detection feature."}
                 </AlertDescription>
               </Alert>
               <div className="flex gap-2 mt-6">
                 <Button onClick={handleStart} variant="outline">
+                  <RefreshCw className="mr-2 h-4 w-4" />
                   Try Again
                 </Button>
                 <Button onClick={() => setShowTroubleshooting(true)} variant="secondary">
@@ -433,34 +471,56 @@ export default function WebcamPlaceholder() {
         )}
       </div>
 
-      {/* Camera troubleshooting dialog */}
+      {/* Enhanced camera troubleshooting dialog */}
       <Dialog open={showTroubleshooting} onOpenChange={setShowTroubleshooting}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Camera Troubleshooting</DialogTitle>
+            <DialogDescription>
+              Follow these steps to resolve camera access issues
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
-            <h3 className="font-medium">Common Issues & Solutions</h3>
-            
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Browser Permissions</AlertTitle>
-              <AlertDescription>
-                Make sure you've allowed camera access in your browser. Look for the camera icon in your address bar.
-              </AlertDescription>
-            </Alert>
+            {availableCameras.length > 0 ? (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Cameras detected: {availableCameras.length}</AlertTitle>
+                <AlertDescription>
+                  Your device has cameras available, but the browser may need permission to access them.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>No cameras detected</AlertTitle>
+                <AlertDescription>
+                  Your browser couldn't detect any cameras. Please check if your camera is connected and working.
+                </AlertDescription>
+              </Alert>
+            )}
             
             <div className="space-y-2">
               <h4 className="font-medium">Steps to Fix:</h4>
-              <ol className="list-decimal pl-5 space-y-2">
-                <li>Check if your browser supports webcams (most modern browsers do)</li>
-                <li>Look for the camera icon in your address bar and ensure it's allowed</li>
-                <li>Try refreshing the page</li>
-                <li>Make sure no other app is using your camera</li>
-                <li>On mobile devices, ensure the site has camera permission in device settings</li>
+              <ol className="list-decimal pl-5 space-y-2 text-sm">
+                <li>Look for the camera icon in your browser's address bar and click it</li>
+                <li>Make sure camera access is set to "Allow" for this website</li>
+                <li>Try refreshing the page after allowing camera access</li>
+                <li>Close other applications that might be using your camera</li>
+                <li>If using a mobile device, check your device settings for camera permissions</li>
+                <li>Try using a different browser (Chrome or Firefox recommended)</li>
               </ol>
             </div>
+            
+            {cameraError && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error Details</AlertTitle>
+                <AlertDescription className="text-xs break-all">
+                  {cameraError}
+                </AlertDescription>
+              </Alert>
+            )}
             
             <div className="mt-4">
               <Button onClick={() => { 
