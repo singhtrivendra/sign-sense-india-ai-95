@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { Camera, CameraOff, RefreshCw, Hand } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -133,9 +132,7 @@ const CameraView = () => {
             // If a sign is detected and it's different from the last one
             if (sign && sign !== detectedSign) {
               setDetectedSign(sign);
-              toast({
-                description: `Detected sign: "${sign}"`,
-              });
+              toast(`Detected sign: "${sign}"`);
             }
           }
         } catch (error) {
