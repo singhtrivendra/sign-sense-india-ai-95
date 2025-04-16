@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Camera, Hand, Play, Video, Pause } from "lucide-react";
@@ -11,7 +10,6 @@ export default function WebcamPlaceholder() {
   const [detectedSign, setDetectedSign] = useState<string | null>(null);
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [isModelReady, setIsModelReady] = useState(false);
-  const [modelLoadingError, setModelLoadingError] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -38,28 +36,26 @@ export default function WebcamPlaceholder() {
   const loadAIModel = async () => {
     try {
       setIsModelLoading(true);
-      setModelLoadingError(null);
-      console.log("Starting model initialization...");
       const modelInitialized = await initializeHandGestureModel();
-      console.log("Model initialization result:", modelInitialized);
       
       if (modelInitialized) {
         setIsModelReady(true);
         toast({
-          title: "Sign recognition model loaded",
-          description: "The model is ready to detect hand gestures.",
+          title: "Demo mode activated",
+          description: "Using simulated sign detection for demonstration purposes.",
         });
       } else {
-        setModelLoadingError("Could not load the sign recognition model.");
         toast({
           variant: "destructive",
           title: "Model initialization failed",
-          description: "Could not load the sign recognition model. Using fallback mode.",
+          description: "Using fallback demo mode for sign detection.",
         });
       }
+      
+      // In either case, we're using demo mode
+      setIsModelReady(true);
     } catch (error) {
       console.error("Error in loadAIModel:", error);
-      setModelLoadingError(error instanceof Error ? error.message : "Unknown error loading model");
     } finally {
       setIsModelLoading(false);
     }
@@ -106,7 +102,6 @@ export default function WebcamPlaceholder() {
   };
 
   const handleActivate = () => {
-    // Even if model failed to load, allow activation for demo purposes
     setStatus("active");
     setIsPaused(false);
     
@@ -116,35 +111,20 @@ export default function WebcamPlaceholder() {
         const imageData = captureVideoFrame(videoRef.current);
         
         if (imageData) {
-          if (isModelReady) {
-            // Use the model if it's ready
-            const recognizedSign = await recognizeHandGesture(imageData);
+          // Use our demo recognition function
+          const recognizedSign = await recognizeHandGesture(imageData);
+          
+          if (recognizedSign && recognizedSign !== detectedSign) {
+            setDetectedSign(recognizedSign);
             
-            if (recognizedSign && recognizedSign !== detectedSign) {
-              setDetectedSign(recognizedSign);
-              
-              toast({
-                title: "Sign Detected",
-                description: `Detected sign: "${recognizedSign}"`,
-              });
-            }
-          } else {
-            // If model isn't ready, do demo detection with simulated results
-            const demoSigns = ["Hello", "Thank you", "Please", "Yes", "No", "Help"];
-            const randomSign = demoSigns[Math.floor(Math.random() * demoSigns.length)];
-            
-            if (Math.random() > 0.8) { // Only show a detection 20% of the time to make it realistic
-              setDetectedSign(randomSign);
-              
-              toast({
-                title: "Demo Mode: Sign Detected",
-                description: `Simulated detection: "${randomSign}" (fallback mode)`,
-              });
-            }
+            toast({
+              title: "Sign Detected",
+              description: `Detected sign: "${recognizedSign}" (demo mode)`,
+            });
           }
         }
       }
-    }, 2000); // Less frequent checks (every 2 seconds)
+    }, 2000); // Check every 2 seconds
   };
   
   const togglePause = () => {
@@ -169,10 +149,6 @@ export default function WebcamPlaceholder() {
       title: "Detection stopped",
       description: "Sign language detection has been stopped.",
     });
-  };
-
-  const retryLoadModel = async () => {
-    await loadAIModel();
   };
 
   return (
@@ -269,23 +245,8 @@ export default function WebcamPlaceholder() {
               <p className="text-sm text-muted-foreground">
                 {isModelReady 
                   ? "Position your hands in frame and click Start" 
-                  : modelLoadingError 
-                    ? "AI model loading failed. Using demo mode." 
-                    : isModelLoading 
-                      ? "Loading AI model..." 
-                      : "Position your hands and click Start"}
+                  : "Using simulated sign detection for demonstration purposes."}
               </p>
-              {modelLoadingError && (
-                <Button 
-                  onClick={retryLoadModel} 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2"
-                  disabled={isModelLoading}
-                >
-                  Retry Loading Model
-                </Button>
-              )}
             </div>
             <Button 
               onClick={handleActivate} 
@@ -293,7 +254,7 @@ export default function WebcamPlaceholder() {
               size="lg"
             >
               <Play className="mr-2 h-4 w-4" />
-              {isModelReady ? "Start Detection" : "Start Demo Mode"}
+              Start Detection
             </Button>
           </div>
         </div>
@@ -307,7 +268,7 @@ export default function WebcamPlaceholder() {
               <p className="text-sm text-muted-foreground">
                 {isModelReady 
                   ? "Make signs in front of the camera" 
-                  : "Demo mode: simulating sign detection"}
+                  : "Using simulated sign detection for demonstration purposes."}
               </p>
             </div>
             <div className="flex items-center gap-3">
