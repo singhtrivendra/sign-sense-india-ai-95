@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Book, Code2, FileCode2, Webhook, Server, Video, ChevronDown, ChevronRight, Search, Filter } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -164,7 +164,7 @@ export default function Documentation() {
                 <Card key={index} className="transition-all duration-300 hover:shadow-lg">
                   <CardContent className="p-6">
                     <div className="rounded-lg bg-blue-light/80 dark:bg-blue-light/10 p-3 mb-4 inline-block">
-                      <doc.icon className="h-6 w-6 text-blue dark:text-blue-light" />
+                      {React.createElement(doc.icon, { className: "h-6 w-6 text-blue dark:text-blue-light" })}
                     </div>
                     <h3 className="text-xl font-medium mb-2">{doc.title}</h3>
                     <p className="text-muted-foreground mb-4">{doc.description}</p>
@@ -196,7 +196,7 @@ export default function Documentation() {
               >
                 <CardContent className="p-6">
                   <div className="rounded-lg bg-blue-light/80 dark:bg-blue-light/10 p-3 mb-4 inline-block">
-                    <doc.icon className="h-6 w-6 text-blue dark:text-blue-light" />
+                    {React.createElement(doc.icon, { className: "h-6 w-6 text-blue dark:text-blue-light" })}
                   </div>
                   <h3 className="text-xl font-medium mb-2">{doc.title}</h3>
                   <p className="text-muted-foreground mb-4">{doc.description}</p>
@@ -220,7 +220,7 @@ export default function Documentation() {
           <CardHeader>
             <div className="flex items-center gap-4">
               <div className="rounded-lg bg-blue-light/80 dark:bg-blue-light/10 p-3">
-                <documentationItems[selectedDoc].icon className="h-6 w-6 text-blue dark:text-blue-light" />
+                {React.createElement(documentationItems[selectedDoc].icon, { className: "h-6 w-6 text-blue dark:text-blue-light" })}
               </div>
               <div>
                 <h2 className="text-2xl font-semibold">{documentationItems[selectedDoc].title}</h2>
