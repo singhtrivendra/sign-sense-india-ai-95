@@ -15,26 +15,22 @@ export type SignItem = {
 };
 
 export async function fetchSignsForLetter(letter: string): Promise<SignItem[]> {
-  try {
-    const targetUrl = `https://indiansignlanguage.org/dictionary/${letter}`;
-    const response = await axios.get(`${BASE_URL}`, {
-      params: {
-        api_key: SCRAPER_API_KEY,
-        url: targetUrl
-      }
-    });
+  const signData = {
+    'A': [
+      { id: 'a1', title: 'Abbreviation', imageUrl: '/signs/abbreviation.jpg', category: 'Common', description: 'Sign for shortening a word or phrase', letter: 'A' },
+      { id: 'a2', title: 'Abeyance', imageUrl: '/signs/abeyance.jpg', category: 'Legal', description: 'Sign representing temporary inactivity', letter: 'A' },
+      { id: 'a3', title: 'About', imageUrl: '/signs/about.jpg', category: 'Common', description: 'Sign for expressing information regarding something', letter: 'A' },
+      { id: 'a4', title: 'Above', imageUrl: '/signs/above.jpg', category: 'Direction', description: 'Sign indicating higher position', letter: 'A' },
+      // ... more A signs
+    ],
+    'B': [
+      { id: 'b1', title: 'Banking', imageUrl: '/signs/banking.jpg', category: 'Finance', description: 'Sign related to financial transactions', letter: 'B' },
+      { id: 'b2', title: 'Before', imageUrl: '/signs/before.jpg', category: 'Time', description: 'Sign indicating prior occurrence', letter: 'B' },
+    ],
+    // ... other letters
+  };
 
-    if (!response.data) {
-      throw new Error('Failed to fetch data');
-    }
-
-    // For now, using mock data while implementing the HTML parsing
-    return getMockSignsForLetter(letter);
-
-  } catch (error) {
-    console.error('Error fetching signs:', error);
-    return [];
-  }
+  return signData[letter] || [];
 }
 
 function parseSignsFromHTML(html: string, letter: string): SignItem[] {

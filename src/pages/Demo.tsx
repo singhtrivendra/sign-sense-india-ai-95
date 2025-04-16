@@ -1,9 +1,9 @@
-
 import { useToast } from "@/components/ui/use-toast";
 import WebcamPlaceholder from "@/components/demo/WebcamPlaceholder";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Info } from "lucide-react";
+import DemoVideo from "@/components/demo/DemoVideo";
 
 export default function Demo() {
   const { toast } = useToast();
@@ -20,7 +20,7 @@ export default function Demo() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
         <div className="lg:col-span-2">
-          <WebcamPlaceholder />
+          <DemoVideo />
         </div>
         
         <div>
