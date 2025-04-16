@@ -43,9 +43,9 @@ export default function HowItWorksPreview() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
           {steps.map((step, index) => (
-            <div key={index} className="card flex flex-col items-center text-center group">
-              <div className={`rounded-full p-4 mb-4 ${step.color}`}>
-                <step.icon className="h-8 w-8" />
+            <div key={index} className="relative group rounded-xl border bg-card p-6 hover:shadow-lg transition-all dark:bg-card/50 dark:hover:bg-card/80 text-center">
+              <div className={`rounded-full p-4 mb-4 ${step.color} dark:bg-blue-light/20`}>
+                <step.icon className="h-8 w-8 dark:text-blue-light" />
               </div>
               <h3 className="text-xl font-medium mb-2">{step.title}</h3>
               <p className="text-muted-foreground">{step.description}</p>

@@ -36,7 +36,7 @@ const features = [
 
 export default function FeaturesSection() {
   return (
-    <section className="section bg-muted/30">
+    <section className="section bg-muted/30 dark:bg-muted/5">
       <div className="container">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="mb-4">Empowering Communication</h2>
@@ -49,10 +49,10 @@ export default function FeaturesSection() {
           {features.map((feature, index) => (
             <div 
               key={index} 
-              className="card hover:border-blue/20 flex flex-col items-start"
+              className="relative group rounded-xl border bg-card p-6 hover:shadow-lg transition-all dark:bg-card/50 dark:hover:bg-card/80"
             >
-              <div className="rounded-lg bg-blue-light p-3 mb-4">
-                <feature.icon className="h-6 w-6 text-blue" />
+              <div className="rounded-lg bg-blue-light/80 dark:bg-blue-light/20 p-3 mb-4">
+                <feature.icon className="h-6 w-6 text-blue dark:text-blue-light" />
               </div>
               <h3 className="text-xl font-medium mb-2">{feature.title}</h3>
               <p className="text-muted-foreground">{feature.description}</p>

@@ -1,5 +1,5 @@
-
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
 
 const SCRAPER_API_KEY = '8f5f7c7fbd1c86ef67af1cbe4e423f57';
 const BASE_URL = 'https://api.scraperapi.com';
@@ -16,35 +16,33 @@ export type SignItem = {
 
 export async function fetchSignsForLetter(letter: string): Promise<SignItem[]> {
   try {
-    // In a real implementation, we would actually scrape and parse the data
-    // For now, we'll mock the API call with sample data
     const targetUrl = `https://indiansignlanguage.org/dictionary/${letter}`;
-    const url = `${BASE_URL}/?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(targetUrl)}`;
-    
-    // In a real implementation, we would fetch and parse HTML here
-    // const response = await fetch(url);
-    // if (!response.ok) throw new Error('Failed to fetch data');
-    // const html = await response.text();
-    // const parsedData = parseSignsFromHTML(html, letter);
-    // return parsedData;
+    const response = await axios.get(`${BASE_URL}`, {
+      params: {
+        api_key: SCRAPER_API_KEY,
+        url: targetUrl
+      }
+    });
 
-    // For now, return mock data for demonstration
+    if (!response.data) {
+      throw new Error('Failed to fetch data');
+    }
+
+    // For now, using mock data while implementing the HTML parsing
     return getMockSignsForLetter(letter);
+
   } catch (error) {
     console.error('Error fetching signs:', error);
     return [];
   }
 }
 
-// This function would parse the HTML from the Indian Sign Language website
-// In a real implementation, this would extract actual sign data
 function parseSignsFromHTML(html: string, letter: string): SignItem[] {
   // In a real implementation, we would parse the HTML here
   // For now, we'll return mock data
   return getMockSignsForLetter(letter);
 }
 
-// Mock data for demonstration
 function getMockSignsForLetter(letter: string): SignItem[] {
   const categories = ['Common', 'Greeting', 'Question', 'Action', 'Object', 'Emotion'];
   
@@ -67,7 +65,6 @@ function getMockSignsForLetter(letter: string): SignItem[] {
   });
 }
 
-// Helper to generate random words for mock data
 function getRandomWord(minLength: number, maxLength: number): string {
   const length = Math.floor(Math.random() * (maxLength - minLength + 1)) + minLength;
   const vowels = ['a', 'e', 'i', 'o', 'u'];
@@ -85,7 +82,6 @@ function getRandomWord(minLength: number, maxLength: number): string {
   return word;
 }
 
-// Helper to generate random sentences for mock data
 function getRandomSentence(): string {
   const sentences = [
     'This sign is commonly used in everyday conversation.',
