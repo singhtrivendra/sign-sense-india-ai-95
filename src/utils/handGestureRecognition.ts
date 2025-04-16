@@ -18,8 +18,7 @@ export const initializeHandGestureModel = async () => {
       
       classifier = await pipeline(
         "image-classification",
-        "RavenOnur/Sign-Language",
-        { quantized: true }
+        "RavenOnur/Sign-Language"
       );
       
       console.log("Model loaded successfully!");

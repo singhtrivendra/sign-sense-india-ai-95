@@ -1,6 +1,6 @@
 
 import { useToast } from "@/components/ui/use-toast";
-import WebcamPlaceholder from "@/components/demo/WebcamPlaceholder";
+import CameraView from "@/components/demo/CameraView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Info } from "lucide-react";
@@ -102,7 +102,7 @@ export default function Demo() {
 
       <div className="mb-12">
         <h2 className="text-2xl font-semibold text-center mb-8">Try It Yourself</h2>
-        <WebcamPlaceholder />
+        <CameraView />
       </div>
 
       <img 
