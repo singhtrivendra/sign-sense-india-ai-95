@@ -134,7 +134,6 @@ const CameraView = () => {
             if (sign && sign !== detectedSign) {
               setDetectedSign(sign);
               toast({
-                title: "Sign Detected",
                 description: `Detected sign: "${sign}"`,
               });
             }
