@@ -1,56 +1,151 @@
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Camera, Hand, Play, Video } from "lucide-react";
+import { AlertCircle, Camera, Hand, Play, Video, Pause } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
+import { initializeHandGestureModel, recognizeHandGesture, captureVideoFrame } from "@/utils/handGestureRecognition";
 
 export default function WebcamPlaceholder() {
   const [status, setStatus] = useState<"initial" | "loading" | "ready" | "active" | "error">("initial");
   const [detectedSign, setDetectedSign] = useState<string | null>(null);
+  const [isModelLoading, setIsModelLoading] = useState(false);
+  const [isModelReady, setIsModelReady] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const detectionIntervalRef = useRef<number | null>(null);
+  
   const { toast } = useToast();
 
-  const handleStart = () => {
+  // Clean up function to handle component unmount
+  useEffect(() => {
+    return () => {
+      // Stop media stream when component unmounts
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
+      // Clear any running intervals
+      if (detectionIntervalRef.current) {
+        clearInterval(detectionIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const handleStart = async () => {
     setStatus("loading");
-    // Simulate loading
-    setTimeout(() => {
-      if (Math.random() > 0.2) {
-        setStatus("ready");
+    
+    try {
+      // Request camera access
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        } 
+      });
+      
+      streamRef.current = stream;
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+      
+      setStatus("ready");
+      toast({
+        title: "Camera access granted",
+        description: "The webcam is now ready to use for sign detection.",
+      });
+      
+      // Start loading the model
+      setIsModelLoading(true);
+      const modelInitialized = await initializeHandGestureModel();
+      setIsModelLoading(false);
+      
+      if (modelInitialized) {
+        setIsModelReady(true);
         toast({
-          title: "Camera access granted",
-          description: "The webcam is now ready to use for sign detection.",
+          title: "Sign recognition model loaded",
+          description: "The model is ready to detect hand gestures.",
         });
       } else {
-        setStatus("error");
         toast({
           variant: "destructive",
-          title: "Camera access denied",
-          description: "Please allow camera access to use the sign language detection feature.",
+          title: "Model initialization failed",
+          description: "Could not load the sign recognition model. Please try again.",
         });
       }
-    }, 1500);
+      
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      setStatus("error");
+      toast({
+        variant: "destructive",
+        title: "Camera access denied",
+        description: "Please allow camera access to use the sign language detection feature.",
+      });
+    }
   };
 
   const handleActivate = () => {
-    setStatus("active");
-    // Simulate sign detection
-    const signs = ["Hello", "Thank you", "Please", "Yes", "No", "Help", "Good", "Sorry"];
-    
-    let detectionInterval = setInterval(() => {
-      const randomSign = signs[Math.floor(Math.random() * signs.length)];
-      setDetectedSign(randomSign);
-      
+    if (!isModelReady) {
       toast({
-        title: "Sign Detected",
-        description: `Detected sign: "${randomSign}"`,
+        variant: "destructive",
+        title: "Model not ready",
+        description: "Please wait for the sign recognition model to load.",
       });
-    }, 5000);
+      return;
+    }
     
-    // Clear interval after 20 seconds
-    setTimeout(() => {
-      clearInterval(detectionInterval);
-    }, 20000);
+    setStatus("active");
+    setIsPaused(false);
+    
+    // Start sign detection at regular intervals
+    detectionIntervalRef.current = window.setInterval(async () => {
+      if (videoRef.current && !isPaused) {
+        const imageData = captureVideoFrame(videoRef.current);
+        
+        if (imageData) {
+          const recognizedSign = await recognizeHandGesture(imageData);
+          
+          if (recognizedSign && recognizedSign !== detectedSign) {
+            setDetectedSign(recognizedSign);
+            
+            toast({
+              title: "Sign Detected",
+              description: `Detected sign: "${recognizedSign}"`,
+            });
+          }
+        }
+      }
+    }, 1000);
+  };
+  
+  const togglePause = () => {
+    setIsPaused(!isPaused);
+    
+    toast({
+      title: isPaused ? "Detection resumed" : "Detection paused",
+      description: isPaused ? "Sign detection is now active" : "Sign detection is paused",
+    });
+  };
+  
+  const stopDetection = () => {
+    if (detectionIntervalRef.current) {
+      clearInterval(detectionIntervalRef.current);
+      detectionIntervalRef.current = null;
+    }
+    
+    setStatus("ready");
+    setDetectedSign(null);
+    
+    toast({
+      title: "Detection stopped",
+      description: "Sign language detection has been stopped.",
+    });
   };
 
   return (
@@ -94,58 +189,21 @@ export default function WebcamPlaceholder() {
         
         {(status === "ready" || status === "active") && (
           <>
-            <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/60 z-10"></div>
+            <div className={`absolute inset-0 bg-gradient-to-b from-black/20 to-black/60 z-10 ${isPaused ? 'opacity-80' : 'opacity-30'}`}></div>
             <video
               ref={videoRef}
               className="w-full h-full object-cover"
-              poster="https://placehold.co/800x450/D3E4FD/33C3F0?text=Camera+Feed"
+              muted
+              playsInline
             ></video>
             
-            {/* Simulated hand tracking points */}
-            {status === "active" && (
+            {/* Hand tracking points visualization - would be replaced by actual model outputs */}
+            {status === "active" && !isPaused && (
               <div className="absolute inset-0 z-20 pointer-events-none">
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                   <div className="relative">
-                    {/* Thumb */}
-                    <div className="absolute top-[-100px] left-[-20px] h-3 w-3 bg-blue rounded-full"></div>
-                    <div className="absolute top-[-80px] left-[-30px] h-3 w-3 bg-blue rounded-full"></div>
-                    <div className="absolute top-[-60px] left-[-40px] h-3 w-3 bg-blue rounded-full"></div>
-                    
-                    {/* Index */}
-                    <div className="absolute top-[-110px] left-[0px] h-3 w-3 bg-blue rounded-full"></div>
-                    <div className="absolute top-[-90px] left-[0px] h-3 w-3 bg-blue rounded-full"></div>
-                    <div className="absolute top-[-70px] left-[0px] h-3 w-3 bg-blue rounded-full"></div>
-                    
-                    {/* Middle */}
-                    <div className="absolute top-[-120px] left-[20px] h-3 w-3 bg-blue rounded-full"></div>
-                    <div className="absolute top-[-100px] left-[20px] h-3 w-3 bg-blue rounded-full"></div>
-                    <div className="absolute top-[-80px] left-[20px] h-3 w-3 bg-blue rounded-full"></div>
-                    
-                    {/* Ring */}
-                    <div className="absolute top-[-110px] left-[40px] h-3 w-3 bg-blue rounded-full"></div>
-                    <div className="absolute top-[-90px] left-[40px] h-3 w-3 bg-blue rounded-full"></div>
-                    <div className="absolute top-[-70px] left-[40px] h-3 w-3 bg-blue rounded-full"></div>
-                    
-                    {/* Pinky */}
-                    <div className="absolute top-[-100px] left-[60px] h-3 w-3 bg-blue rounded-full"></div>
-                    <div className="absolute top-[-80px] left-[60px] h-3 w-3 bg-blue rounded-full"></div>
-                    <div className="absolute top-[-60px] left-[60px] h-3 w-3 bg-blue rounded-full"></div>
-                    
-                    {/* Palm */}
-                    <div className="absolute top-[-50px] left-[10px] h-3 w-3 bg-blue rounded-full"></div>
-                    <div className="absolute top-[-40px] left-[-10px] h-3 w-3 bg-blue rounded-full"></div>
-                    <div className="absolute top-[-40px] left-[30px] h-3 w-3 bg-blue rounded-full"></div>
-                    
-                    {/* Connect points with lines */}
-                    <svg className="absolute top-[-130px] left-[-50px] w-[150px] h-[100px]" viewBox="0 0 150 100" fill="none" stroke="#33C3F0" strokeWidth="1" strokeLinecap="round">
-                      {/* Example connections - in a real app, these would be dynamic */}
-                      <path d="M30 80 L20 60 L10 40" />
-                      <path d="M50 80 L50 60 L50 40" />
-                      <path d="M70 80 L70 60 L70 30" />
-                      <path d="M90 80 L90 60 L90 40" />
-                      <path d="M110 80 L110 60 L110 40" />
-                      <path d="M30 80 L60 90 L90 80" />
-                    </svg>
+                    {/* Simplified hand tracking points visualization */}
+                    <div className="h-40 w-40 border-2 border-dashed border-blue rounded-full animate-pulse opacity-50"></div>
                   </div>
                 </div>
               </div>
@@ -165,6 +223,14 @@ export default function WebcamPlaceholder() {
             </div>
           </div>
         )}
+        
+        {/* Model loading indicator */}
+        {isModelLoading && (
+          <div className="absolute top-4 right-4 z-30 bg-black/70 backdrop-blur-sm rounded-lg p-3 text-white flex items-center">
+            <div className="h-4 w-4 rounded-full border-2 border-t-blue border-blue/20 animate-spin mr-2"></div>
+            <span className="text-sm">Loading AI model...</span>
+          </div>
+        )}
       </div>
       
       {/* Controls */}
@@ -173,9 +239,18 @@ export default function WebcamPlaceholder() {
           <div className="flex justify-between items-center">
             <div>
               <h4 className="font-medium">Camera Ready</h4>
-              <p className="text-sm text-muted-foreground">Position your hands in frame and click Start</p>
+              <p className="text-sm text-muted-foreground">
+                {isModelReady 
+                  ? "Position your hands in frame and click Start" 
+                  : "Waiting for AI model to load..."}
+              </p>
             </div>
-            <Button onClick={handleActivate} className="rounded-full" size="lg">
+            <Button 
+              onClick={handleActivate} 
+              className="rounded-full" 
+              size="lg"
+              disabled={!isModelReady}
+            >
               <Play className="mr-2 h-4 w-4" />
               Start Detection
             </Button>
@@ -190,9 +265,23 @@ export default function WebcamPlaceholder() {
               <h4 className="font-medium text-blue">Detection Active</h4>
               <p className="text-sm text-muted-foreground">Make signs in front of the camera</p>
             </div>
-            <div className="flex items-center">
-              <div className="h-3 w-3 rounded-full bg-green-500 mr-2 animate-pulse"></div>
-              <span className="text-sm font-medium">Live</span>
+            <div className="flex items-center gap-3">
+              <Button onClick={togglePause} variant="outline" className="rounded-full" size="sm">
+                {isPaused ? (
+                  <><Play className="h-4 w-4 mr-1" /> Resume</>
+                ) : (
+                  <><Pause className="h-4 w-4 mr-1" /> Pause</>
+                )}
+              </Button>
+              <Button onClick={stopDetection} variant="destructive" className="rounded-full" size="sm">
+                Stop
+              </Button>
+              {!isPaused && (
+                <div className="flex items-center ml-2">
+                  <div className="h-3 w-3 rounded-full bg-green-500 mr-2 animate-pulse"></div>
+                  <span className="text-sm font-medium">Live</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
