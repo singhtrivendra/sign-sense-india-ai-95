@@ -1,7 +1,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowRight, Hand } from "lucide-react";
 
 export default function HeroSection() {
   return (
@@ -21,10 +20,9 @@ export default function HeroSection() {
               An educational platform empowering communication through advanced AI recognition of Indian Sign Language. Learn, practice, and connect.
             </p>
             <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
-              <Button asChild size="lg" className="rounded-full">
+              <Button asChild size="lg" className="rounded-full bg-blue hover:bg-blue-dark text-white">
                 <Link to="/learn">
                   Learn Sign Language
-                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="rounded-full">
@@ -36,7 +34,11 @@ export default function HeroSection() {
             <div className="aspect-video overflow-hidden rounded-xl bg-blue-light/30 shadow-xl">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
-                  <Hand className="h-16 w-16 text-blue mx-auto mb-4 animate-pulse" />
+                  <img 
+                    src="/lovable-uploads/f57f5ced-c7ea-494f-8a29-c2405f5bb047.png" 
+                    alt="Sign Language Recognition Hand"
+                    className="h-20 w-auto mx-auto mb-4"
+                  />
                   <h3 className="text-xl font-medium">Sign Language Recognition</h3>
                   <p className="text-muted-foreground mt-2">Interactive AI-powered experience</p>
                 </div>

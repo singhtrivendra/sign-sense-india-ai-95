@@ -6,7 +6,7 @@ export default function DemoVideo() {
     <div className="aspect-video w-full rounded-lg overflow-hidden bg-black shadow-lg">
       <iframe
         className="w-full h-full"
-        src="https://www.youtube.com/embed/7M_fWO7wMyA?t=2s"
+        src="https://www.youtube.com/embed/bEOgHdtTSeQ"
         title="Indian Sign Language Demo"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen

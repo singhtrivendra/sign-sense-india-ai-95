@@ -1,5 +1,5 @@
 
-import { ArrowRight, BrainCircuit, HandMetal, Image, Video } from "lucide-react";
+import { BrainCircuit, HandMetal, Image, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -51,12 +51,6 @@ export default function HowItWorksPreview() {
                 <h3 className="text-xl font-medium mb-2">{step.title}</h3>
                 <p className="text-muted-foreground">{step.description}</p>
               </div>
-              
-              {index < steps.length - 1 && (
-                <div className="hidden lg:block absolute -right-4 top-1/2 transform -translate-y-1/2 z-10">
-                  <ArrowRight className="h-8 w-8 text-blue animate-pulse" />
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -65,15 +59,14 @@ export default function HowItWorksPreview() {
           <Button asChild variant="outline" size="lg" className="rounded-full">
             <Link to="/how-it-works">
               Learn More About The Technology
-              <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
         </div>
 
         <div className="mt-16">
           <img 
-            src="/lovable-uploads/d299e249-5159-4a3a-b7df-12a8f387e55e.png" 
-            alt="Sign Language Support Hand"
+            src="/lovable-uploads/ffde8d9d-e1af-4032-b4e6-e54dad8f7368.png" 
+            alt="Sign Language Hand"
             className="w-full max-w-lg mx-auto rounded-lg shadow-lg"
           />
         </div>
