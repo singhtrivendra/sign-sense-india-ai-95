@@ -122,7 +122,7 @@ export default function Documentation() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
         <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
           <TabsTrigger value="browse">Browse Documents</TabsTrigger>
-          <TabsTrigger value="search">Search & Filter</TabsTrigger>
+          <TabsTrigger value="search">Search &amp; Filter</TabsTrigger>
         </TabsList>
         
         <TabsContent value="search" className="space-y-4">
