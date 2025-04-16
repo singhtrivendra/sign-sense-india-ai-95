@@ -15,7 +15,7 @@ export const initializeHandGestureModel = async () => {
     classifier = await pipeline(
       'image-classification',
       'Xenova/mobilevit-xxs-classification', // This is a publicly accessible model
-      { quantized: true } // Use quantized model for better performance
+      // Removed the 'quantized' option as it's not in the PretrainedModelOptions type
     );
     
     console.log("Hand gesture model initialized successfully");
