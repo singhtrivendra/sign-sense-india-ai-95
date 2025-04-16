@@ -1,5 +1,5 @@
 
-import { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Camera, Hand, Play, Video, Pause } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -11,6 +11,7 @@ export default function WebcamPlaceholder() {
   const [detectedSign, setDetectedSign] = useState<string | null>(null);
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [isModelReady, setIsModelReady] = useState(false);
+  const [modelLoadingError, setModelLoadingError] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -34,6 +35,36 @@ export default function WebcamPlaceholder() {
     };
   }, []);
 
+  const loadAIModel = async () => {
+    try {
+      setIsModelLoading(true);
+      setModelLoadingError(null);
+      console.log("Starting model initialization...");
+      const modelInitialized = await initializeHandGestureModel();
+      console.log("Model initialization result:", modelInitialized);
+      
+      if (modelInitialized) {
+        setIsModelReady(true);
+        toast({
+          title: "Sign recognition model loaded",
+          description: "The model is ready to detect hand gestures.",
+        });
+      } else {
+        setModelLoadingError("Could not load the sign recognition model.");
+        toast({
+          variant: "destructive",
+          title: "Model initialization failed",
+          description: "Could not load the sign recognition model. Using fallback mode.",
+        });
+      }
+    } catch (error) {
+      console.error("Error in loadAIModel:", error);
+      setModelLoadingError(error instanceof Error ? error.message : "Unknown error loading model");
+    } finally {
+      setIsModelLoading(false);
+    }
+  };
+
   const handleStart = async () => {
     setStatus("loading");
     
@@ -51,7 +82,7 @@ export default function WebcamPlaceholder() {
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        await videoRef.current.play();
       }
       
       setStatus("ready");
@@ -61,23 +92,7 @@ export default function WebcamPlaceholder() {
       });
       
       // Start loading the model
-      setIsModelLoading(true);
-      const modelInitialized = await initializeHandGestureModel();
-      setIsModelLoading(false);
-      
-      if (modelInitialized) {
-        setIsModelReady(true);
-        toast({
-          title: "Sign recognition model loaded",
-          description: "The model is ready to detect hand gestures.",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Model initialization failed",
-          description: "Could not load the sign recognition model. Please try again.",
-        });
-      }
+      await loadAIModel();
       
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -91,15 +106,7 @@ export default function WebcamPlaceholder() {
   };
 
   const handleActivate = () => {
-    if (!isModelReady) {
-      toast({
-        variant: "destructive",
-        title: "Model not ready",
-        description: "Please wait for the sign recognition model to load.",
-      });
-      return;
-    }
-    
+    // Even if model failed to load, allow activation for demo purposes
     setStatus("active");
     setIsPaused(false);
     
@@ -109,19 +116,35 @@ export default function WebcamPlaceholder() {
         const imageData = captureVideoFrame(videoRef.current);
         
         if (imageData) {
-          const recognizedSign = await recognizeHandGesture(imageData);
-          
-          if (recognizedSign && recognizedSign !== detectedSign) {
-            setDetectedSign(recognizedSign);
+          if (isModelReady) {
+            // Use the model if it's ready
+            const recognizedSign = await recognizeHandGesture(imageData);
             
-            toast({
-              title: "Sign Detected",
-              description: `Detected sign: "${recognizedSign}"`,
-            });
+            if (recognizedSign && recognizedSign !== detectedSign) {
+              setDetectedSign(recognizedSign);
+              
+              toast({
+                title: "Sign Detected",
+                description: `Detected sign: "${recognizedSign}"`,
+              });
+            }
+          } else {
+            // If model isn't ready, do demo detection with simulated results
+            const demoSigns = ["Hello", "Thank you", "Please", "Yes", "No", "Help"];
+            const randomSign = demoSigns[Math.floor(Math.random() * demoSigns.length)];
+            
+            if (Math.random() > 0.8) { // Only show a detection 20% of the time to make it realistic
+              setDetectedSign(randomSign);
+              
+              toast({
+                title: "Demo Mode: Sign Detected",
+                description: `Simulated detection: "${randomSign}" (fallback mode)`,
+              });
+            }
           }
         }
       }
-    }, 1000);
+    }, 2000); // Less frequent checks (every 2 seconds)
   };
   
   const togglePause = () => {
@@ -146,6 +169,10 @@ export default function WebcamPlaceholder() {
       title: "Detection stopped",
       description: "Sign language detection has been stopped.",
     });
+  };
+
+  const retryLoadModel = async () => {
+    await loadAIModel();
   };
 
   return (
@@ -236,23 +263,37 @@ export default function WebcamPlaceholder() {
       {/* Controls */}
       {status === "ready" && (
         <div className="p-4 bg-white border-t">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
             <div>
               <h4 className="font-medium">Camera Ready</h4>
               <p className="text-sm text-muted-foreground">
                 {isModelReady 
                   ? "Position your hands in frame and click Start" 
-                  : "Waiting for AI model to load..."}
+                  : modelLoadingError 
+                    ? "AI model loading failed. Using demo mode." 
+                    : isModelLoading 
+                      ? "Loading AI model..." 
+                      : "Position your hands and click Start"}
               </p>
+              {modelLoadingError && (
+                <Button 
+                  onClick={retryLoadModel} 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2"
+                  disabled={isModelLoading}
+                >
+                  Retry Loading Model
+                </Button>
+              )}
             </div>
             <Button 
               onClick={handleActivate} 
               className="rounded-full" 
               size="lg"
-              disabled={!isModelReady}
             >
               <Play className="mr-2 h-4 w-4" />
-              Start Detection
+              {isModelReady ? "Start Detection" : "Start Demo Mode"}
             </Button>
           </div>
         </div>
@@ -263,7 +304,11 @@ export default function WebcamPlaceholder() {
           <div className="flex justify-between items-center">
             <div>
               <h4 className="font-medium text-blue">Detection Active</h4>
-              <p className="text-sm text-muted-foreground">Make signs in front of the camera</p>
+              <p className="text-sm text-muted-foreground">
+                {isModelReady 
+                  ? "Make signs in front of the camera" 
+                  : "Demo mode: simulating sign detection"}
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <Button onClick={togglePause} variant="outline" className="rounded-full" size="sm">
