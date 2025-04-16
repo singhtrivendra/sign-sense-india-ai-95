@@ -1,3 +1,4 @@
+
 import { useToast } from "@/components/ui/use-toast";
 import WebcamPlaceholder from "@/components/demo/WebcamPlaceholder";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -98,6 +99,17 @@ export default function Demo() {
           </Alert>
         </div>
       </div>
+
+      <div className="mb-12">
+        <h2 className="text-2xl font-semibold text-center mb-8">Try It Yourself</h2>
+        <WebcamPlaceholder />
+      </div>
+
+      <img 
+        src="/lovable-uploads/034c8736-02ed-436b-8804-fbe293120ff7.png" 
+        alt="Sign Language Processing Flow"
+        className="w-full max-w-4xl mx-auto rounded-xl shadow-lg mb-12"
+      />
     </div>
   );
 }

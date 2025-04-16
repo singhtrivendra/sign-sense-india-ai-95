@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { SignItem, useSignAPI } from "@/services/api";
 import SignCard from "@/components/learn/SignCard";
 import AlphabetFilter from "@/components/learn/AlphabetFilter";
@@ -7,6 +7,9 @@ import SearchAndFilters from "@/components/learn/SearchAndFilters";
 import { useToast } from "@/components/ui/use-toast";
 import { Book, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+// Memoize SignCard component for better performance
+const MemoizedSignCard = memo(SignCard);
 
 export default function Learn() {
   const [selectedLetter, setSelectedLetter] = useState("A");
@@ -111,7 +114,7 @@ export default function Learn() {
       ) : displaySigns.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {displaySigns.map((sign) => (
-            <SignCard key={sign.id} sign={sign} />
+            <MemoizedSignCard key={sign.id} sign={sign} />
           ))}
         </div>
       ) : (

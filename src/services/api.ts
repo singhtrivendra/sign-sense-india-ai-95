@@ -2,9 +2,6 @@
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
-const SCRAPER_API_KEY = '8f5f7c7fbd1c86ef67af1cbe4e423f57';
-const BASE_URL = 'https://api.scraperapi.com';
-
 export type SignItem = {
   id: string;
   title: string;
@@ -27,23 +24,8 @@ export async function fetchSignsForLetter(letter: string): Promise<SignItem[]> {
 
   console.log(`Fetching new data for letter ${letter}`);
   
-  // This is mock data for demonstration
-  const signData = {
-    'A': [
-      { id: 'a1', title: 'Abbreviation', imageUrl: '/signs/abbreviation.jpg', category: 'Common', description: 'Sign for shortening a word or phrase', letter: 'A' },
-      { id: 'a2', title: 'Abeyance', imageUrl: '/signs/abeyance.jpg', category: 'Legal', description: 'Sign representing temporary inactivity', letter: 'A' },
-      { id: 'a3', title: 'About', imageUrl: '/signs/about.jpg', category: 'Common', description: 'Sign for expressing information regarding something', letter: 'A' },
-      { id: 'a4', title: 'Above', imageUrl: '/signs/above.jpg', category: 'Direction', description: 'Sign indicating higher position', letter: 'A' },
-      // ... more A signs
-    ],
-    'B': [
-      { id: 'b1', title: 'Banking', imageUrl: '/signs/banking.jpg', category: 'Finance', description: 'Sign related to financial transactions', letter: 'B' },
-      { id: 'b2', title: 'Before', imageUrl: '/signs/before.jpg', category: 'Time', description: 'Sign indicating prior occurrence', letter: 'B' },
-    ],
-    // ... other letters
-  };
-
-  const result = signData[letter] || [];
+  // Generate mock data for all letters of the alphabet
+  const result = getMockSignsForLetter(letter);
   
   // Store in cache for future use
   signCache[letter] = result;
@@ -51,30 +33,22 @@ export async function fetchSignsForLetter(letter: string): Promise<SignItem[]> {
   return result;
 }
 
-function parseSignsFromHTML(html: string, letter: string): SignItem[] {
-  // In a real implementation, we would parse the HTML here
-  // For now, we'll return mock data
-  return getMockSignsForLetter(letter);
-}
-
 function getMockSignsForLetter(letter: string): SignItem[] {
-  // Limit number of mock signs to improve performance
-  const maxCount = 12;
+  // Fixed count for better performance
+  const count = 8;
   const categories = ['Common', 'Greeting', 'Question', 'Action', 'Object', 'Emotion'];
-  
-  // Generate between 5-maxCount mock signs for the given letter
-  const count = Math.floor(Math.random() * (maxCount - 5)) + 5;
   
   return Array.from({ length: count }, (_, i) => {
     const id = `${letter.toLowerCase()}-${i + 1}`;
     const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+    const title = `${letter}${getRandomWord(3, 8)}`;
     
     return {
       id,
-      title: `${letter}${getRandomWord(3, 8)}`,
-      imageUrl: `https://placehold.co/400x300/D3E4FD/33C3F0?text=${letter}+Sign+${i + 1}`,
+      title: title,
+      imageUrl: `https://placehold.co/400x300/D3E4FD/33C3F0?text=${encodeURIComponent(title)}`,
       videoUrl: i % 3 === 0 ? `https://example.com/videos/${id}.mp4` : undefined,
-      description: `This is the sign for ${letter}${getRandomWord(3, 8)}. ${getRandomSentence()}`,
+      description: `This is the sign for ${title}. ${getRandomSentence()}`,
       category: randomCategory,
       letter,
     };
