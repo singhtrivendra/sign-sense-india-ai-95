@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Camera, Hand, Play, Video, Pause, RefreshCw } from "lucide-react";
@@ -25,7 +24,6 @@ export default function WebcamPlaceholder() {
   
   const { toast } = useToast();
 
-  // Check for camera access on component mount
   useEffect(() => {
     debugCameraAccess().then(result => {
       console.log("Camera debug result:", result);
@@ -35,12 +33,10 @@ export default function WebcamPlaceholder() {
     });
     
     return () => {
-      // Stop media stream when component unmounts
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
       
-      // Clear any running intervals
       if (detectionIntervalRef.current) {
         clearInterval(detectionIntervalRef.current);
         detectionIntervalRef.current = null;
@@ -67,7 +63,6 @@ export default function WebcamPlaceholder() {
         });
       }
       
-      // In either case, we're using demo mode
       setIsModelReady(true);
     } catch (error) {
       console.error("Error in loadAIModel:", error);
@@ -82,31 +77,26 @@ export default function WebcamPlaceholder() {
     setCameraAttempts(prev => prev + 1);
     
     try {
-      // Force refresh any existing streams
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
       
-      // Different constraints for different attempts
       let constraints;
       if (cameraAttempts > 2) {
-        // Very basic constraints as last resort
         constraints = { video: true, audio: false };
         console.log("Using basic video constraints");
       } else if (cameraAttempts > 1) {
-        // Try with different constraints on second attempt
         constraints = {
           audio: false,
           video: {
             facingMode: 'user',
-            width: { ideal: 320 }, // Smaller resolution
+            width: { ideal: 320 },
             height: { ideal: 240 }
           }
         };
         console.log("Using lower resolution constraints");
       } else {
-        // First attempt with standard constraints
         constraints = {
           audio: false,
           video: {
@@ -128,7 +118,6 @@ export default function WebcamPlaceholder() {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           
-          // Make sure video autoplay works properly
           videoRef.current.autoplay = true;
           videoRef.current.muted = true;
           videoRef.current.playsInline = true;
@@ -174,19 +163,16 @@ export default function WebcamPlaceholder() {
         }
       } catch (streamError) {
         console.error("Error getting camera stream:", streamError);
-        throw streamError; // Re-throw to be caught by outer try/catch
+        throw streamError;
       }
       
-      // Start loading the model regardless - even if video fails at first
       await loadAIModel();
-      
     } catch (error) {
       console.error('Error accessing camera:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown camera error';
       setCameraError(errorMessage);
       setStatus("error");
       
-      // Check for specific error patterns
       const errorStr = String(error).toLowerCase();
       let errorDescription = "Please allow camera access to use the sign language detection feature.";
       
@@ -221,7 +207,6 @@ export default function WebcamPlaceholder() {
     setStatus("active");
     setIsPaused(false);
     
-    // Start sign detection at more frequent intervals for better responsiveness
     if (detectionIntervalRef.current) {
       clearInterval(detectionIntervalRef.current);
     }
@@ -232,21 +217,18 @@ export default function WebcamPlaceholder() {
           const imageData = captureVideoFrame(videoRef.current);
           
           if (imageData) {
-            // Use our demo recognition function
             const recognizedSign = await recognizeHandGesture(imageData);
             
             if (recognizedSign && recognizedSign !== detectedSign) {
               setDetectedSign(recognizedSign);
               
-              // Provide visual and audio feedback for better user experience
               toast({
                 title: "Sign Detected",
                 description: `Detected sign: "${recognizedSign}" (demo mode)`,
               });
               
-              // Play a subtle sound effect for detection feedback
               const audio = new Audio();
-              audio.src = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YWoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBhxQo%2BTxtng0DwhLiuD43JdaKw8QWaf48Linux0NEcX2x4uShKRhWc6Hf4rp8RiAdU6fo98qtZCoYQp%2Fx%2BeS0gkAQMID27%2BO2gk0hK3n58%2BO2j1MoL3f89%2BO8klAoKHP%2B%2FfLLolctHGn%2F%2FvTarGYxGV3%2F%2F%2FLmsngxFVT%2F%2F%2FnntHomD07%2F%2F%2F7vuHUkC0P%2B%2F%2F%2F5wX4jBjr8%2Fv%2F%2B%2BcaGIgRB%2FP%2F%2F%2F%2F%2FJEAE6%2BP%2F%2F%2F%2F";
+              audio.src = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YWoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBhxQo%2BTxtng0DwhLiuD43JdaKw8QWaf48Linux0NEcX2x4uShKRhWc6Hf4rp8RiAdU6fo98qtZCoYQp%2Fx%2BeS0gkAQMID27%2BO2gk0hK3n58%2BO2j1MoL3f89%2BO8klAoKHP%2B%2FfLLolctHGn%2F%2FvTarGYxGV3%2F%2F%2FLmsngxFVT%2F%2F%2FnntHomD07%2F%2F%2F7vuHUkC0P%2B%2F%2F%2F5wX4jBjr8%2Fv%2F%2B%2BcaGIgRB%2FP%2F%2F%2F%2F";
               audio.volume = 0.2;
               audio.play().catch(err => console.log("Audio feedback not supported"));
             }
@@ -255,9 +237,9 @@ export default function WebcamPlaceholder() {
           console.error('Error during sign detection:', error);
         }
       }
-    }, 1000); // Check every 1 second for more responsive detection
+    }, 1000);
   };
-  
+
   const togglePause = () => {
     setIsPaused(!isPaused);
     
@@ -266,7 +248,7 @@ export default function WebcamPlaceholder() {
       description: isPaused ? "Sign detection is now active" : "Sign detection is paused",
     });
   };
-  
+
   const stopDetection = () => {
     if (detectionIntervalRef.current) {
       clearInterval(detectionIntervalRef.current);
@@ -355,7 +337,6 @@ export default function WebcamPlaceholder() {
                 autoPlay
                 style={{ transform: "scaleX(-1)" }}
                 onClick={() => {
-                  // Attempt to play the video on user interaction if autoplay failed
                   if (videoRef.current) {
                     console.log("Manual play attempt after click");
                     videoRef.current.play().catch(e => 
@@ -366,21 +347,40 @@ export default function WebcamPlaceholder() {
               ></video>
               
               {/* Enhanced hand tracking visualization */}
-              {// ... keep existing code (hand tracking visualization) }
             </>
           )}
           
-          {/* Detected sign overlay - Enhanced with animation */}
-          {// ... keep existing code (detected sign overlay) }
+          {detectedSign && status === "active" && (
+            <div className="absolute top-4 left-4 right-4 z-20 animate-fade-in">
+              <Alert className="bg-blue-dark/80 text-white border-blue-light">
+                <Hand className="h-4 w-4" />
+                <AlertTitle>Sign Detected</AlertTitle>
+                <AlertDescription>
+                  Recognized: <span className="font-bold">{detectedSign}</span>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
           
-          {/* No sign detected status - only show after initial detection */}
-          {// ... keep existing code (no sign detected status) }
+          {status === "active" && !isPaused && isModelReady && !detectedSign && (
+            <div className="absolute bottom-4 right-4 z-20">
+              <div className="bg-black/60 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                <div className="w-2 h-2 bg-blue rounded-full mr-2 animate-pulse"></div>
+                Waiting for signs...
+              </div>
+            </div>
+          )}
           
-          {/* Model loading indicator */}
-          {// ... keep existing code (model loading indicator) }
+          {isModelLoading && (
+            <div className="absolute bottom-4 left-4 z-20">
+              <div className="bg-black/60 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse"></div>
+                Loading detection model...
+              </div>
+            </div>
+          )}
         </div>
         
-        {/* Controls */}
         {status === "ready" && (
           <div className="p-4 bg-white border-t">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
@@ -432,9 +432,13 @@ export default function WebcamPlaceholder() {
               <div className="flex items-center gap-3">
                 <Button onClick={togglePause} variant="outline" className="rounded-full" size="sm">
                   {isPaused ? (
-                    <><Play className="h-4 w-4 mr-1" /> Resume</>
+                    <>
+                      <Play className="h-4 w-4 mr-1" /> Resume
+                    </>
                   ) : (
-                    <><Pause className="h-4 w-4 mr-1" /> Pause</>
+                    <>
+                      <Pause className="h-4 w-4 mr-1" /> Pause
+                    </>
                   )}
                 </Button>
                 <Button onClick={stopDetection} variant="destructive" className="rounded-full" size="sm">
@@ -452,7 +456,6 @@ export default function WebcamPlaceholder() {
         )}
       </div>
 
-      {/* Enhanced camera troubleshooting dialog */}
       <Dialog open={showTroubleshooting} onOpenChange={setShowTroubleshooting}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
