@@ -1,5 +1,6 @@
+
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, CameraOff, RefreshCw, Hand } from 'lucide-react';
+import { Camera, CameraOff, RefreshCw, Hand, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -8,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const CameraView = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +17,9 @@ const CameraView = () => {
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectedSign, setDetectedSign] = useState<string | null>(null);
+  const [modelError, setModelError] = useState<string | null>(null);
   const detectionIntervalRef = useRef<number | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   const startCamera = async () => {
     setIsLoading(true);
@@ -30,12 +34,15 @@ const CameraView = () => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setIsStreaming(true);
-        toast.success('Camera started successfully');
+        toast('Camera started successfully');
+        
+        // Start drawing the grid once camera is on
+        startGridDrawing();
       }
     } catch (err) {
       console.error('Error accessing camera:', err);
       setError('Unable to access your camera. Please check your permissions.');
-      toast.error('Failed to access camera');
+      toast('Failed to access camera');
     } finally {
       setIsLoading(false);
     }
@@ -45,12 +52,18 @@ const CameraView = () => {
     // Stop detection if it's running
     stopDetection();
     
+    // Stop grid drawing
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
     if (videoRef.current && videoRef.current.srcObject) {
       const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
       tracks.forEach(track => track.stop());
       videoRef.current.srcObject = null;
       setIsStreaming(false);
-      toast.info('Camera stopped');
+      toast('Camera stopped');
     }
   };
 
@@ -60,6 +73,66 @@ const CameraView = () => {
     } else {
       startCamera();
     }
+  };
+  
+  const drawGrid = () => {
+    if (!canvasRef.current || !videoRef.current || !isStreaming) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Match canvas size to video
+    canvas.width = videoRef.current.videoWidth || 640;
+    canvas.height = videoRef.current.videoHeight || 480;
+    
+    // Clear previous drawing
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw grid
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.lineWidth = 1;
+    
+    // Draw vertical lines
+    const cellWidth = canvas.width / 3;
+    for (let x = 0; x <= canvas.width; x += cellWidth) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
+      ctx.stroke();
+    }
+    
+    // Draw horizontal lines
+    const cellHeight = canvas.height / 3;
+    for (let y = 0; y <= canvas.height; y += cellHeight) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
+    }
+    
+    // Draw hand position area (center grid cell)
+    ctx.strokeStyle = 'rgba(0, 123, 255, 0.8)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.rect(cellWidth, cellHeight, cellWidth, cellHeight);
+    ctx.stroke();
+    
+    // Add text instruction
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Position hand gesture here', canvas.width / 2, canvas.height - 20);
+    
+    // Continue animation loop
+    animationFrameRef.current = requestAnimationFrame(drawGrid);
+  };
+  
+  const startGridDrawing = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    animationFrameRef.current = requestAnimationFrame(drawGrid);
   };
 
   useEffect(() => {
@@ -71,6 +144,10 @@ const CameraView = () => {
       if (detectionIntervalRef.current) {
         clearInterval(detectionIntervalRef.current);
       }
+      
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
   }, [isStreaming]);
 
@@ -78,17 +155,20 @@ const CameraView = () => {
     if (isModelReady || isModelLoading) return;
     
     setIsModelLoading(true);
+    setModelError(null);
     try {
       const modelInitialized = await initializeHandGestureModel();
       setIsModelReady(modelInitialized);
       if (modelInitialized) {
-        toast.success('Sign language model loaded successfully');
+        toast('Sign language model loaded successfully');
       } else {
-        toast.error('Failed to load sign language model');
+        setModelError('Failed to load sign language model. Please check your connection and try again.');
+        toast('Failed to load sign language model');
       }
     } catch (err) {
       console.error('Error loading sign language model:', err);
-      toast.error('Error initializing sign language detection');
+      setModelError('Error initializing sign language detection model.');
+      toast('Error initializing sign language detection');
     } finally {
       setIsModelLoading(false);
     }
@@ -96,13 +176,15 @@ const CameraView = () => {
 
   const startDetection = () => {
     if (!isStreaming || !videoRef.current) {
-      toast.error('Camera must be started before detection');
+      toast('Camera must be started before detection');
       return;
     }
     
     if (!isModelReady) {
-      loadSignLanguageModel().then(() => {
-        startDetectionProcess();
+      loadSignLanguageModel().then((success) => {
+        if (success) {
+          startDetectionProcess();
+        }
       });
     } else {
       startDetectionProcess();
@@ -141,7 +223,7 @@ const CameraView = () => {
       }
     }, 1000); // Check every second
     
-    toast.success('Sign detection started');
+    toast('Sign detection started');
   };
 
   const stopDetection = () => {
@@ -152,7 +234,7 @@ const CameraView = () => {
     setIsDetecting(false);
     setDetectedSign(null);
     if (isDetecting) {
-      toast.info('Sign detection stopped');
+      toast('Sign detection stopped');
     }
   };
 
@@ -224,12 +306,27 @@ const CameraView = () => {
             </div>
           )}
           
+          {modelError && (
+            <div className="absolute top-4 right-4 z-10">
+              <div className="bg-red-500/80 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                {modelError}
+              </div>
+            </div>
+          )}
+          
           <video 
             ref={videoRef}
             autoPlay 
             playsInline
             className={`w-full h-full object-cover ${isStreaming ? 'opacity-100' : 'opacity-0'}`}
             style={{ transform: "scaleX(-1)" }} // Mirror the camera
+          />
+          
+          <canvas 
+            ref={canvasRef}
+            className="absolute top-0 left-0 w-full h-full"
+            style={{ transform: "scaleX(-1)" }} // Mirror the grid to match video
           />
         </div>
         

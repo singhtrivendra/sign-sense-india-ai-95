@@ -1,4 +1,3 @@
-
 import { pipeline, env } from '@huggingface/transformers';
 
 // Configure transformers.js to use the right settings
@@ -12,22 +11,16 @@ export const initializeHandGestureModel = async () => {
   try {
     console.log("Starting model initialization...");
     
-    try {
-      // Try to initialize the actual model
-      console.log("Attempting to load RavenOnur/Sign-Language model...");
-      
-      classifier = await pipeline(
-        "image-classification",
-        "RavenOnur/Sign-Language"
-      );
-      
-      console.log("Model loaded successfully!");
-      return true;
-    } catch (modelError) {
-      console.error("Error loading model:", modelError);
-      console.log("Falling back to demo mode");
-      return true; // Return true to continue in demo mode
-    }
+    // Initialize the actual model
+    console.log("Attempting to load RavenOnur/Sign-Language model...");
+    
+    classifier = await pipeline(
+      "image-classification",
+      "RavenOnur/Sign-Language"
+    );
+    
+    console.log("Model loaded successfully!");
+    return true;
   } catch (error) {
     console.error('Error initializing hand gesture model:', error);
     return false;
@@ -41,71 +34,44 @@ const detectionCooldown = 3000; // 3 seconds cooldown before the same sign can b
 
 export const recognizeHandGesture = async (imageData: string): Promise<string | null> => {
   try {
-    if (classifier) {
-      try {
-        // Try to use the actual model
-        const img = document.createElement('img');
-        img.src = imageData;
-        await new Promise(resolve => { img.onload = resolve; });
-        
-        const results = await classifier(img);
-        if (results && results.length > 0) {
-          const topResult = results[0];
-          const detectedSign = topResult.label;
-          const confidence = topResult.score;
-          
-          // Only return signs with reasonable confidence
-          if (confidence > 0.6) {
-            const currentTime = Date.now();
-            
-            // Don't repeat the same sign too frequently
-            if (detectedSign !== lastDetectedSign || (currentTime - lastDetectionTime > detectionCooldown)) {
-              lastDetectedSign = detectedSign;
-              lastDetectionTime = currentTime;
-              console.log(`Model detected: "${detectedSign}" with confidence ${confidence}`);
-              return detectedSign;
-            }
-          }
-        }
-        
-        return null;
-      } catch (modelError) {
-        console.error("Error using model:", modelError);
-        // Fall back to demo mode
-      }
+    if (!classifier) {
+      console.log("Model not initialized, cannot recognize gestures");
+      return null;
     }
     
-    // Demo mode fallback
-    const demoSigns = ["Hello", "Thank you", "Please", "Yes", "No", "Help", "Good", "Sorry"];
+    // Use the actual model
+    const img = document.createElement('img');
+    img.src = imageData;
+    await new Promise(resolve => { img.onload = resolve; });
     
-    // Only detect when there's likely motion in the video
-    const currentTime = Date.now();
-    
-    // Random value to determine if we'll "detect" something (simulate motion detection)
-    const motionDetected = Math.random() > 0.7; // 30% chance overall
-    
-    if (motionDetected) {
-      // Choose a random sign
-      const randomIndex = Math.floor(Math.random() * demoSigns.length);
-      const detectedSign = demoSigns[randomIndex];
+    const results = await classifier(img);
+    if (results && results.length > 0) {
+      const topResult = results[0];
+      const detectedSign = topResult.label;
+      const confidence = topResult.score;
       
-      // Don't repeat the same sign too frequently
-      if (detectedSign !== lastDetectedSign || (currentTime - lastDetectionTime > detectionCooldown)) {
-        lastDetectedSign = detectedSign;
-        lastDetectionTime = currentTime;
-        console.log(`Demo mode: Detected sign "${detectedSign}"`);
-        return detectedSign;
+      // Only return signs with reasonable confidence
+      if (confidence > 0.6) {
+        const currentTime = Date.now();
+        
+        // Don't repeat the same sign too frequently
+        if (detectedSign !== lastDetectedSign || (currentTime - lastDetectionTime > detectionCooldown)) {
+          lastDetectedSign = detectedSign;
+          lastDetectionTime = currentTime;
+          console.log(`Model detected: "${detectedSign}" with confidence ${confidence}`);
+          return detectedSign;
+        }
       }
     }
     
-    return null; // No gesture detected
+    return null; // No gesture detected or low confidence
   } catch (error) {
     console.error('Error recognizing hand gesture:', error);
     return null;
   }
 };
 
-// Helper function to capture a frame from video element
+// Helper function to capture a frame from video element with grid overlay
 export const captureVideoFrame = (videoElement: HTMLVideoElement): string => {
   if (!videoElement || !videoElement.readyState || videoElement.readyState < 2) {
     console.warn("Video not ready for frame capture");
@@ -121,6 +87,7 @@ export const captureVideoFrame = (videoElement: HTMLVideoElement): string => {
     if (ctx) {
       // Draw the current video frame to the canvas
       ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+      
       // Return as data URL
       return canvas.toDataURL('image/jpeg', 0.8);
     }
