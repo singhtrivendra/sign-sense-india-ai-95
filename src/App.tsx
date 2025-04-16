@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route } from "react-router-dom";
@@ -10,6 +11,7 @@ import HowItWorks from "./pages/HowItWorks";
 import About from "./pages/About";
 import Documentation from "./pages/Documentation";
 import Blog from "./pages/Blog";
+import Contact from "./pages/Contact";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +26,7 @@ const App = () => (
         <Route path="/about" element={<About />} />
         <Route path="/docs" element={<Documentation />} />
         <Route path="/blog" element={<Blog />} />
+        <Route path="/contact" element={<Contact />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
