@@ -152,7 +152,7 @@ const CameraView = () => {
   }, [isStreaming]);
 
   const loadSignLanguageModel = async () => {
-    if (isModelReady || isModelLoading) return;
+    if (isModelReady || isModelLoading) return false;
     
     setIsModelLoading(true);
     setModelError(null);
@@ -161,14 +161,17 @@ const CameraView = () => {
       setIsModelReady(modelInitialized);
       if (modelInitialized) {
         toast('Sign language model loaded successfully');
+        return true;
       } else {
         setModelError('Failed to load sign language model. Please check your connection and try again.');
         toast('Failed to load sign language model');
+        return false;
       }
     } catch (err) {
       console.error('Error loading sign language model:', err);
       setModelError('Error initializing sign language detection model.');
       toast('Error initializing sign language detection');
+      return false;
     } finally {
       setIsModelLoading(false);
     }
