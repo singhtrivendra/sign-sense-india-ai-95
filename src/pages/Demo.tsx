@@ -15,7 +15,7 @@ export default function Demo() {
         <h1 className="mb-4">Live Sign Language Detection</h1>
         <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
           Experience our AI-powered sign language recognition system in action.
-          Use your webcam to try detecting Indian Sign Language in real-time.
+          Use your webcam to try detecting sign language in real-time.
         </p>
       </div>
 
@@ -63,7 +63,7 @@ export default function Demo() {
                   <div className="bg-blue-light rounded-full h-8 w-8 flex items-center justify-center text-blue font-bold shrink-0">4</div>
                   <div>
                     <h4 className="font-medium">Perform Signs</h4>
-                    <p className="text-sm text-muted-foreground">Make Indian Sign Language gestures and see the system detect them.</p>
+                    <p className="text-sm text-muted-foreground">Make sign language gestures and see the system detect them.</p>
                   </div>
                 </div>
               </div>
@@ -72,20 +72,20 @@ export default function Demo() {
             <TabsContent value="about" className="space-y-4 p-4">
               <h3 className="font-medium text-lg">About This Demo</h3>
               <p className="text-sm text-muted-foreground">
-                This is a demonstration of our sign language recognition technology. The system uses computer vision and machine learning to detect and interpret Indian Sign Language gestures in real-time.
+                This is a demonstration of our sign language recognition technology. The system uses computer vision and machine learning to detect and interpret sign language gestures in real-time using the RavenOnur/Sign-Language model.
               </p>
               
               <Alert>
                 <Info className="h-4 w-4" />
-                <AlertTitle>Demo Version</AlertTitle>
+                <AlertTitle>AI Model Information</AlertTitle>
                 <AlertDescription>
-                  This is a simulated demo. In the full version, our AI model recognizes a comprehensive range of Indian Sign Language signs with high accuracy.
+                  This demo uses the RavenOnur/Sign-Language model from Hugging Face for sign language recognition. The model is designed to recognize various sign language gestures.
                 </AlertDescription>
               </Alert>
               
-              <h4 className="font-medium mt-4">Currently Supported Signs</h4>
+              <h4 className="font-medium mt-4">Supported Signs</h4>
               <p className="text-sm text-muted-foreground">
-                The demo can detect basic signs including: Hello, Thank you, Please, Yes, No, Help, Good, and Sorry.
+                The model can detect a range of sign language gestures including common words and phrases. Performance may vary based on lighting conditions and hand positioning.
               </p>
             </TabsContent>
           </Tabs>

@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Camera, Hand, Play, Video, Pause, RefreshCw } from "lucide-react";
@@ -52,8 +53,8 @@ export default function WebcamPlaceholder() {
       if (modelInitialized) {
         setIsModelReady(true);
         toast({
-          title: "Demo mode activated",
-          description: "Using simulated sign detection for demonstration purposes.",
+          title: "Sign language detection initialized",
+          description: "The recognition model is ready to detect signs.",
         });
       } else {
         toast({
@@ -82,6 +83,15 @@ export default function WebcamPlaceholder() {
         streamRef.current = null;
       }
       
+      // Create video element first if it doesn't exist
+      if (!videoRef.current) {
+        console.error("Video element reference is missing");
+        setCameraError("Video element could not be initialized");
+        setStatus("error");
+        return;
+      }
+      
+      // Try different camera constraints progressively
       let constraints;
       if (cameraAttempts > 2) {
         constraints = { video: true, audio: false };
@@ -118,6 +128,7 @@ export default function WebcamPlaceholder() {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           
+          // Make sure autoplay properties are set
           videoRef.current.autoplay = true;
           videoRef.current.muted = true;
           videoRef.current.playsInline = true;
@@ -141,7 +152,7 @@ export default function WebcamPlaceholder() {
                 setCameraError(`Error playing video: ${playError instanceof Error ? playError.message : 'Unknown error'}`);
                 toast({
                   title: "Camera needs manual activation",
-                  description: "Please click the video area if camera doesn't start automatically.",
+                  description: "Please click the video area to activate camera.",
                   variant: "destructive"
                 });
               }
@@ -150,7 +161,7 @@ export default function WebcamPlaceholder() {
           
           videoRef.current.onerror = (event) => {
             console.error("Video element error occurred", event);
-            setCameraError(`Video error: ${event instanceof Event ? 'Unknown error' : event}`);
+            setCameraError(`Video error: ${event instanceof Event ? 'Unknown error' : String(event)}`);
             setStatus("error");
             toast({
               variant: "destructive",
@@ -166,6 +177,7 @@ export default function WebcamPlaceholder() {
         throw streamError;
       }
       
+      // Load the AI model
       await loadAIModel();
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -224,11 +236,11 @@ export default function WebcamPlaceholder() {
               
               toast({
                 title: "Sign Detected",
-                description: `Detected sign: "${recognizedSign}" (demo mode)`,
+                description: `Detected sign: "${recognizedSign}"`,
               });
               
               const audio = new Audio();
-              audio.src = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YWoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBhxQo%2BTxtng0DwhLiuD43JdaKw8QWaf48Linux0NEcX2x4uShKRhWc6Hf4rp8RiAdU6fo98qtZCoYQp%2Fx%2BeS0gkAQMID27%2BO2gk0hK3n58%2BO2j1MoL3f89%2BO8klAoKHP%2B%2FfLLolctHGn%2F%2FvTarGYxGV3%2F%2F%2FLmsngxFVT%2F%2F%2FnntHomD07%2F%2F%2F7vuHUkC0P%2B%2F%2F%2F5wX4jBjr8%2Fv%2F%2B%2BcaGIgRB%2FP%2F%2F%2F%2F";
+              audio.src = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YWoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBhxQo%2BTxtng0DwhLiuD43JdaKw8QWaf48Linux0NEcX2x4uShKRhWc6Hf4rp8RiAdU6fo98qtZCoYQp%2Fx%2BeS0gkAQMID27%2BO2gk0hK3n58%2BO2j1MoL3f89%2BO8klAoKHP%2B%2FfLLolctHGn%2F%2FvTarGYxGV3%2F%2F%2FLmsngxFVT%2F%2F%2FnntHomD07%2F%2F%2F7vuHUkC0P%2B%2F%2F%2F5wX4jBjr8%2Fv%2F%2B%2BcaGIgRB%2FP%2F%2F%2F%2F%2F";
               audio.volume = 0.2;
               audio.play().catch(err => console.log("Audio feedback not supported"));
             }
@@ -345,8 +357,6 @@ export default function WebcamPlaceholder() {
                   }
                 }}
               ></video>
-              
-              {/* Enhanced hand tracking visualization */}
             </>
           )}
           

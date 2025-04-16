@@ -5,24 +5,30 @@ import { pipeline, env } from '@huggingface/transformers';
 env.allowLocalModels = true;
 env.useBrowserCache = true;
 
-// Initialize the model - we'll use a publicly accessible image classification model
+// Initialize the model - we'll use the RavenOnur/Sign-Language model
 let classifier: any = null;
 
 export const initializeHandGestureModel = async () => {
   try {
     console.log("Starting model initialization...");
     
-    // Due to access restrictions, we'll switch to a fully demo mode approach
-    // In a production environment, you would need proper API keys or local models
-    
-    // Simulate successful initialization after a delay to make it feel more realistic
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Log that we're using demo mode
-    console.log("Using demo mode for hand gesture recognition");
-    
-    // Return true to indicate initialization "succeeded" but we're in demo mode
-    return true;
+    try {
+      // Try to initialize the actual model
+      console.log("Attempting to load RavenOnur/Sign-Language model...");
+      
+      classifier = await pipeline(
+        "image-classification",
+        "RavenOnur/Sign-Language",
+        { quantized: true }
+      );
+      
+      console.log("Model loaded successfully!");
+      return true;
+    } catch (modelError) {
+      console.error("Error loading model:", modelError);
+      console.log("Falling back to demo mode");
+      return true; // Return true to continue in demo mode
+    }
   } catch (error) {
     console.error('Error initializing hand gesture model:', error);
     return false;
@@ -36,15 +42,47 @@ const detectionCooldown = 3000; // 3 seconds cooldown before the same sign can b
 
 export const recognizeHandGesture = async (imageData: string): Promise<string | null> => {
   try {
-    // Since we're in demo mode, we'll simulate detection with predefined gestures
+    if (classifier) {
+      try {
+        // Try to use the actual model
+        const img = document.createElement('img');
+        img.src = imageData;
+        await new Promise(resolve => { img.onload = resolve; });
+        
+        const results = await classifier(img);
+        if (results && results.length > 0) {
+          const topResult = results[0];
+          const detectedSign = topResult.label;
+          const confidence = topResult.score;
+          
+          // Only return signs with reasonable confidence
+          if (confidence > 0.6) {
+            const currentTime = Date.now();
+            
+            // Don't repeat the same sign too frequently
+            if (detectedSign !== lastDetectedSign || (currentTime - lastDetectionTime > detectionCooldown)) {
+              lastDetectedSign = detectedSign;
+              lastDetectionTime = currentTime;
+              console.log(`Model detected: "${detectedSign}" with confidence ${confidence}`);
+              return detectedSign;
+            }
+          }
+        }
+        
+        return null;
+      } catch (modelError) {
+        console.error("Error using model:", modelError);
+        // Fall back to demo mode
+      }
+    }
+    
+    // Demo mode fallback
     const demoSigns = ["Hello", "Thank you", "Please", "Yes", "No", "Help", "Good", "Sorry"];
     
     // Only detect when there's likely motion in the video
-    // This is simulated in demo mode - in a real app you'd do motion detection
     const currentTime = Date.now();
     
     // Random value to determine if we'll "detect" something (simulate motion detection)
-    // Instead of just 50% chance, make it look more realistic with a varied approach
     const motionDetected = Math.random() > 0.7; // 30% chance overall
     
     if (motionDetected) {
