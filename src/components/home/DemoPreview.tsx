@@ -10,14 +10,24 @@ export default function DemoPreview() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
             <div className="relative aspect-video rounded-xl overflow-hidden bg-black shadow-xl">
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                <Video className="h-16 w-16 mb-4 animate-pulse-slow" />
-                <h3 className="text-2xl font-medium">Live Demo</h3>
-                <p className="text-white/70 mt-2">Try our sign language recognition in real-time</p>
-              </div>
+              <video 
+                className="absolute inset-0 w-full h-full object-cover"
+                autoPlay 
+                muted 
+                loop 
+                playsInline
+              >
+                <source src="/demo-video.mp4" type="video/mp4" />
+                {/* Fallback content */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                  <Video className="h-16 w-16 mb-4 animate-pulse-slow" />
+                  <h3 className="text-2xl font-medium">Live Demo</h3>
+                  <p className="text-white/70 mt-2">Try our sign language recognition in real-time</p>
+                </div>
+              </video>
               
               {/* Overlay gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
               
               {/* Mock webcam interface elements */}
               <div className="absolute top-4 right-4 flex space-x-2">

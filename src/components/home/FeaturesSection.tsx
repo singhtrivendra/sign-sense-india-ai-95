@@ -1,5 +1,5 @@
-
 import { Brain, Eye, Laptop, SquareCode, Users, VideoIcon } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 const features = [
   {
@@ -47,16 +47,18 @@ export default function FeaturesSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
-            <div 
+            <Card 
               key={index} 
-              className="relative group rounded-xl border bg-card p-6 hover:shadow-lg transition-all dark:bg-card/50 dark:hover:bg-card/80"
+              className="group transition-all duration-300 hover:shadow-lg dark:hover:shadow-blue-light/5"
             >
-              <div className="rounded-lg bg-blue-light/80 dark:bg-blue-light/20 p-3 mb-4">
-                <feature.icon className="h-6 w-6 text-blue dark:text-blue-light" />
-              </div>
-              <h3 className="text-xl font-medium mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground">{feature.description}</p>
-            </div>
+              <CardContent className="p-6">
+                <div className="rounded-lg bg-blue-light/80 dark:bg-blue-light/10 p-3 mb-4">
+                  <feature.icon className="h-6 w-6 text-blue dark:text-blue-light" />
+                </div>
+                <h3 className="text-xl font-medium mb-2">{feature.title}</h3>
+                <p className="text-muted-foreground">{feature.description}</p>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
