@@ -21,7 +21,11 @@ export default function CtaSection() {
                     Learn Signs
                   </Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 rounded-full">
+                <Button 
+                  asChild 
+                  size="lg" 
+                  className="bg-blue-dark hover:bg-blue-dark/90 text-white rounded-full border-none"
+                >
                   <Link to="/demo">
                     <Video className="mr-2 h-4 w-4" />
                     Try Demo
