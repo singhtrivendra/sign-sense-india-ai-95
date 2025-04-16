@@ -122,6 +122,50 @@
     @apply bg-blue text-white hover:bg-blue-600 font-medium rounded-lg px-6 py-2 transition-colors;
   }
 
+  /* Hand gesture detection animations */
+  @keyframes pulse {
+    0% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7);
+    }
+    
+    70% {
+      transform: scale(1);
+      box-shadow: 0 0 0 10px rgba(52, 152, 219, 0);
+    }
+    
+    100% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+    }
+  }
+
+  @keyframes tracking-point {
+    0% {
+      opacity: 0.5;
+      transform: scale(0.8);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+    100% {
+      opacity: 0.5;
+      transform: scale(0.8);
+    }
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   a {
     pointer-events: auto !important;
   }

@@ -65,20 +65,43 @@ export default function WebcamPlaceholder() {
     setStatus("loading");
     
     try {
-      // Request camera access
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
+      // Request camera access with explicit constraints for better compatibility
+      const constraints = {
+        audio: false,
+        video: {
           facingMode: 'user',
           width: { ideal: 640 },
           height: { ideal: 480 }
-        } 
-      });
+        }
+      };
       
+      // Force refresh any existing streams
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        
+        // Make sure video autoplay works properly
+        videoRef.current.autoplay = true;
+        videoRef.current.muted = true;
+        videoRef.current.playsInline = true;
+        
+        try {
+          await videoRef.current.play();
+          console.log("Camera video stream started successfully");
+        } catch (playError) {
+          console.error("Error playing video:", playError);
+          // Try again with user interaction
+          toast({
+            title: "Camera needs manual activation",
+            description: "Please click the video area if camera doesn't start automatically.",
+          });
+        }
       }
       
       setStatus("ready");
@@ -105,26 +128,37 @@ export default function WebcamPlaceholder() {
     setStatus("active");
     setIsPaused(false);
     
-    // Start sign detection at regular intervals
+    // Start sign detection at more frequent intervals for better responsiveness
     detectionIntervalRef.current = window.setInterval(async () => {
       if (videoRef.current && !isPaused) {
-        const imageData = captureVideoFrame(videoRef.current);
-        
-        if (imageData) {
-          // Use our demo recognition function
-          const recognizedSign = await recognizeHandGesture(imageData);
+        try {
+          const imageData = captureVideoFrame(videoRef.current);
           
-          if (recognizedSign && recognizedSign !== detectedSign) {
-            setDetectedSign(recognizedSign);
+          if (imageData) {
+            // Use our demo recognition function
+            const recognizedSign = await recognizeHandGesture(imageData);
             
-            toast({
-              title: "Sign Detected",
-              description: `Detected sign: "${recognizedSign}" (demo mode)`,
-            });
+            if (recognizedSign && recognizedSign !== detectedSign) {
+              setDetectedSign(recognizedSign);
+              
+              // Provide visual and audio feedback for better user experience
+              toast({
+                title: "Sign Detected",
+                description: `Detected sign: "${recognizedSign}" (demo mode)`,
+              });
+              
+              // Play a subtle sound effect for detection feedback
+              const audio = new Audio();
+              audio.src = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YWoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBhxQo%2BTxtng0DwhLiuD43JdaKw8QWaf48Linux0NEcX2x4uShKRhWc6Hf4rp8RiAdU6fo98qtZCoYQp%2Fx%2BeS0gkAQMID27%2Be2gk0hK3n58%2BO2j1MoL3f89%2BO8klAoKHP%2B%2FfLLolctHGn%2F%2FvTarGYxGV3%2F%2F%2FLmsngxFVT%2F%2F%2FnntHomD07%2F%2F%2F7vuHUkC0P%2B%2F%2F%2F5wX4jBjr8%2Fv%2F%2B%2BcaGIgRB%2FP%2F%2F%2F%2B%2FJEAE6%2BP%2F%2F%2F%2F";
+              audio.volume = 0.2;
+              audio.play().catch(err => console.log("Audio feedback not supported"));
+            }
           }
+        } catch (error) {
+          console.error('Error during sign detection:', error);
         }
       }
-    }, 2000); // Check every 2 seconds
+    }, 1000); // Check every 1 second for more responsive detection
   };
   
   const togglePause = () => {
@@ -198,32 +232,87 @@ export default function WebcamPlaceholder() {
               className="w-full h-full object-cover"
               muted
               playsInline
+              autoPlay
+              style={{ transform: "scaleX(-1)" }} /* Mirror the camera for more intuitive interaction */
+              onClick={() => {
+                // Attempt to play the video on user interaction if autoplay failed
+                if (videoRef.current) {
+                  videoRef.current.play().catch(e => 
+                    console.log("Play attempt on click failed:", e)
+                  );
+                }
+              }}
             ></video>
             
-            {/* Hand tracking points visualization - would be replaced by actual model outputs */}
+            {/* Enhanced hand tracking visualization */}
             {status === "active" && !isPaused && (
               <div className="absolute inset-0 z-20 pointer-events-none">
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                   <div className="relative">
-                    {/* Simplified hand tracking points visualization */}
-                    <div className="h-40 w-40 border-2 border-dashed border-blue rounded-full animate-pulse opacity-50"></div>
+                    {/* Main detection area */}
+                    <div className="h-48 w-48 border-2 border-dashed border-blue rounded-full animate-pulse opacity-60"></div>
+                    
+                    {/* Hand tracking points visualization */}
+                    <div className="absolute top-0 left-0 w-full h-full">
+                      {/* Simulate finger tracking points */}
+                      {[...Array(5)].map((_, i) => (
+                        <div 
+                          key={i}
+                          className="absolute h-3 w-3 bg-green-500 rounded-full shadow-lg"
+                          style={{
+                            top: `${20 + Math.sin(Date.now() / 1000 + i) * 15}%`,
+                            left: `${25 + i * 12 + Math.cos(Date.now() / 1200 + i) * 5}%`,
+                            animation: `pulse 1.5s ease-in-out ${i * 0.2}s infinite alternate`
+                          }}
+                        />
+                      ))}
+                      
+                      {/* Palm center point */}
+                      <div 
+                        className="absolute h-5 w-5 bg-blue rounded-full shadow-lg"
+                        style={{
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          animation: 'pulse 2s infinite'
+                        }}
+                      />
+                    </div>
                   </div>
+                </div>
+                
+                {/* Processing indicator */}
+                <div className="absolute bottom-8 right-8 flex items-center bg-black/50 text-white p-2 rounded-lg text-sm">
+                  <div className="h-3 w-3 rounded-full bg-green-500 mr-2 animate-pulse"></div>
+                  <span>Processing gestures...</span>
                 </div>
               </div>
             )}
           </>
         )}
         
-        {/* Detected sign overlay */}
+        {/* Detected sign overlay - Enhanced with animation */}
         {detectedSign && status === "active" && (
-          <div className="absolute bottom-4 left-4 right-4 z-30 bg-black/70 backdrop-blur-sm rounded-lg p-3 text-white">
+          <div className="absolute bottom-4 left-4 right-4 z-30 bg-black/70 backdrop-blur-sm rounded-lg p-3 text-white"
+               style={{animation: "fadeIn 0.3s ease-out"}}>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <Hand className="h-5 w-5 mr-2 text-blue" />
+                <Hand className="h-5 w-5 mr-2 text-primary" />
                 <span>Detected Sign:</span>
               </div>
-              <span className="font-bold text-blue">{detectedSign}</span>
+              <div className="flex items-center">
+                <span className="font-bold text-primary text-lg">{detectedSign}</span>
+                <div className="ml-2 h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+              </div>
             </div>
+          </div>
+        )}
+        
+        {/* No sign detected status - only show after initial detection */}
+        {!detectedSign && status === "active" && !isPaused && (
+          <div className="absolute top-4 right-4 z-30 bg-black/50 backdrop-blur-sm rounded-lg p-2 text-white text-sm flex items-center">
+            <div className="h-2 w-2 bg-yellow-500 rounded-full animate-pulse mr-2"></div>
+            <span>Waiting for hand gesture...</span>
           </div>
         )}
         

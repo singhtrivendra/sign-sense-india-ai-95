@@ -32,11 +32,12 @@ export const initializeHandGestureModel = async () => {
 export const recognizeHandGesture = async (imageData: string): Promise<string | null> => {
   try {
     // Since we're in demo mode, we'll simulate detection with predefined gestures
-    const demoSigns = ["Hello", "Thank you", "Please", "Yes", "No", "Help"];
+    const demoSigns = ["Hello", "Thank you", "Please", "Yes", "No", "Help", "Good", "Sorry"];
     
-    // Only return a sign occasionally to make it seem more realistic
-    if (Math.random() > 0.7) {  // 30% chance of detecting a sign
+    // Increase detection rate to make it feel more responsive (50% chance)
+    if (Math.random() > 0.5) {
       const randomIndex = Math.floor(Math.random() * demoSigns.length);
+      console.log(`Demo mode: Detected sign "${demoSigns[randomIndex]}"`);
       return demoSigns[randomIndex];
     }
     
