@@ -1,4 +1,4 @@
-const API_URL = 'https://sign-lang-project.onrender.com/'; 
+const API_URL = 'https://sign-lang-project.onrender.com'; 
 
 export const initializeHandGestureModel = async () => {
   try {
