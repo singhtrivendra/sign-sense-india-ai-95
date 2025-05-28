@@ -63,13 +63,7 @@ export default function HowItWorksPreview() {
           </Button>
         </div>
 
-        <div className="mt-16">
-          <img 
-            src="/lovable-uploads/ffde8d9d-e1af-4032-b4e6-e54dad8f7368.png" 
-            alt="Sign Language Hand"
-            className="w-full max-w-lg mx-auto rounded-lg shadow-lg"
-          />
-        </div>
+   
       </div>
     </section>
   );

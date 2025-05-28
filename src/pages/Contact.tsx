@@ -71,19 +71,20 @@ export default function Contact() {
             
             <div>
               <h4 className="text-lg font-medium mb-2">Location</h4>
-              <p>Mumbai, Maharashtra, India</p>
+              <p>Sector-14 Panjab University <br />
+                Chandigarh, India</p>
             </div>
             
             <div>
               <h4 className="text-lg font-medium mb-2">Social Media</h4>
               <div className="flex gap-4">
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <a href="https://x.com/SinghTrivendra7" className="text-muted-foreground hover:text-primary transition-colors">
                   Twitter
                 </a>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <a href="https://www.linkedin.com/in/trivendra-singh-919bb6255/" className="text-muted-foreground hover:text-primary transition-colors">
                   LinkedIn
                 </a>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <a href="https://www.instagram.com/singh_trivendra_07/" className="text-muted-foreground hover:text-primary transition-colors">
                   Instagram
                 </a>
               </div>

@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 import { Hand, Github, Twitter, Linkedin, Mail } from "lucide-react";
 
 const SOCIAL_LINKS = {
-  github: "https://github.com/signsense-ai",
-  twitter: "https://twitter.com/signsense_ai",
-  linkedin: "https://linkedin.com/company/signsense-ai",
-  email: "mailto:contact@signsense.ai"
+  github: "https://github.com/singhtrivendra",
+  twitter: "https://x.com/SinghTrivendra7",
+  linkedin: "https://www.linkedin.com/in/trivendra-singh-919bb6255/",
+  email: "mailto:trivendrasingh0711@gmail.com"
 };
 
 export default function Footer() {
@@ -81,7 +81,7 @@ export default function Footer() {
                 <Link to="/contact" className="text-muted-foreground hover:text-blue transition-colors">Contact Form</Link>
               </li>
               <li>
-                <a href={SOCIAL_LINKS.email} className="text-muted-foreground hover:text-blue transition-colors">contact@signsense.ai</a>
+                <a href={SOCIAL_LINKS.email} className="text-muted-foreground hover:text-blue transition-colors">trivendrasingh0711@gmail.com</a>
               </li>
             </ul>
           </div>
