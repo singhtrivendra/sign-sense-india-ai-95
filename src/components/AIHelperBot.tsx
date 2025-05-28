@@ -16,7 +16,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 export default function AIHelperBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { text: "👋 Hi there! I'm your AI career assistant. How can I help you today?", sender: 'bot' }
+    { text: "👋 Hi there! I'm your Virtual Assistant. How can I help you today?", sender: 'bot' }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isVisible, setIsVisible] = useState(false);
@@ -186,7 +186,7 @@ export default function AIHelperBot() {
               <div className="bg-white/20 rounded-full p-1.5 mr-2">
                 <Bot className="h-5 w-5" />
               </div>
-              <span className="font-medium">AI Career Coach</span>
+              <span className="font-medium">Virtual Assistant</span>
             </div>
             <Button variant="ghost" size="icon" onClick={toggleChat} className="h-7 w-7 text-white hover:bg-white/20 rounded-full p-0">
               <X className="h-4 w-4" />
