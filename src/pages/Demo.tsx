@@ -106,7 +106,7 @@ export default function Demo() {
       </div>
 
       <img 
-        src="/home.png" 
+        src="/sign.webp" 
         alt="Sign Language Processing Flow"
         className="w-full max-w-4xl mx-auto rounded-xl shadow-lg mb-12"
       />
