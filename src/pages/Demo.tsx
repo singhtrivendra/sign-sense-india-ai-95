@@ -106,7 +106,7 @@ export default function Demo() {
       </div>
 
       <img 
-        src="/lovable-uploads/034c8736-02ed-436b-8804-fbe293120ff7.png" 
+        src="/home.png" 
         alt="Sign Language Processing Flow"
         className="w-full max-w-4xl mx-auto rounded-xl shadow-lg mb-12"
       />
