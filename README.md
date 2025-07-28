@@ -1,4 +1,3 @@
-<img width="2062" height="381" alt="image" src="https://github.com/user-attachments/assets/f39534df-067b-410e-9806-a5622f965372" />
 # SignSense
 SignSense is an innovative AI-powered platform that combines cutting-edge technology with educational resources to make Indian Sign Language more accessible for everyone. Our mission is to bridge communication gaps and empower the deaf and hard-of-hearing community through advanced computer vision and machine learning.
 
